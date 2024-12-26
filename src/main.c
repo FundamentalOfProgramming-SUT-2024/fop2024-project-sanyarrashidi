@@ -2,6 +2,6 @@
 #include"menus.h"
 
 int main() {
-    foo(5);
+    printf("Testing the version history.\n");
     return 0;
 }

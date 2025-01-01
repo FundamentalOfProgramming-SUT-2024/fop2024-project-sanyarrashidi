@@ -5,13 +5,12 @@ void handle_login() {
     initscr();
     int height, width;
     getmaxyx(stdscr, height, width);
-    FILE* data_file = fopen("data/users.csv", "r");
+    keypad(stdscr, TRUE);
+    FILE* data_file = fopen("data/players.csv", "r");
     fseek(data_file, 0, SEEK_END);
     if (!ftell(data_file)) {
         mvprintw(height / 2, (width - 25) / 2, "You are the first player!");
-        refresh();
         mvprintw(height / 2 + 1, (width - 36) / 2, "Press ANY KEY to create your profile.");
-        refresh();
         mvprintw(height / 2 + 2, (width - 20) / 2, "Press ESC to leave.");
         refresh();
         char command = getch();
@@ -23,7 +22,25 @@ void handle_login() {
         }
     }
     else {
-
+        mvprintw(height / 2 - 8, (width - 8) / 2, "Welcome!");
+        mvprintw(height / 2 - 6, (width - 32) / 2, "Press L to log into your account.");
+        mvprintw(height / 2 - 4, (width - 32) / 2, "Press N to create a new account.");
+        mvprintw(height / 2 - 2, (width - 26) / 2, "Press G to play as guest.");
+        mvprintw(height / 2, (width - 20) / 2, "Press ESC to leave.");
+        refresh();
+        char command = getch();
+        clear();
+        rewind(data_file);
+        if (tolower(command) == 'n')
+            new_user(height, width);
+        else if (tolower(command) == 'l')
+            login(data_file, height, width);
+        else if (tolower(command) == 'g') {}
+            //start function
+        else if (command == 27)
+            endwin();
+        else    
+            endwin();
     }
     fclose(data_file);
     endwin();
@@ -58,12 +75,78 @@ void new_user(int height, int width) {
         email_is_valid = check_email(new_player.email, height, width);
     }
 
-
+    FILE* data_file = fopen("data/players.csv", "a");
+    fprintf(data_file, "%s,%s,%s\n", new_player.username, new_player.password, new_player.email);
+    fclose(data_file);
 }
 
 
-void login() {
+void login(FILE* data_file, int height, int width) {
+    attron(A_UNDERLINE);
+    mvprintw(10, (width - 60) / 2, "Enter the number of player you want to log into:");
+    refresh();
+    attroff(A_UNDERLINE);
+    Player* players = (Player*) calloc(100, sizeof(Player));
+    char* read_player = (char*) calloc(1000, sizeof(char));
+    int player_counter = 0;
+    while(fgets(read_player, 1000, data_file)) {
+        players[player_counter].username = (char*) calloc(1000, sizeof(char));
+        players[player_counter].password = (char*) calloc(1000, sizeof(char));
+        char* player_inf = strtok(read_player, ",");
+        players[player_counter].username = strdup(player_inf);
+        mvprintw(14 + player_counter, (width - 48) / 2, "%d. %s\n", player_counter + 1, players[player_counter].username);
+        refresh();
+        player_inf = strtok(NULL, ",");
+        players[player_counter].password = strdup(player_inf);
+        player_counter++;
+    }
+    
+    noecho();
+    curs_set(0);
+    int player_num = getch() - 48;
+    while(player_num - 1 >= player_counter) {
+        attron(A_BOLD);
+        mvprintw(7, (width - 14) / 2, "Invalid digit!");
+        refresh();
+        attroff(A_BOLD);
+        player_num = getch();
+    }
 
+    curs_set(1);
+    echo();
+    clear();
+    Player selected_player = *(players + player_num - 1);
+    char* entered_pass = (char*) calloc(100, sizeof(char));
+    int attempts = 3;
+    while (attempts > 0) {
+        if (attempts < 3) {
+            attron(A_BOLD);
+            mvprintw(7, (width - 20) / 2, "Invalid password!");
+            refresh();
+            attroff(A_BOLD);
+        }
+        move(height / 2 - 8, 0);
+        clrtoeol();
+        mvprintw(height / 2 - 10, (width - (40 + strlen(selected_player.username))) / 2, "Enter password for \"%s\":(%d attempts left)", selected_player.username, attempts);
+        refresh();
+        move(height / 2 - 8, (width - 18) / 2);
+        getstr(entered_pass);
+        if (!strcmp(entered_pass ,selected_player.password))
+            break;
+        else
+            attempts--;
+    }
+
+    if (attempts) {
+        // user entered
+    }
+    else {
+        clear();
+        mvprintw(height / 2 - 10, (width - 28) / 2, "Too many attempts!");
+        refresh();
+        getch();
+        endwin();
+    }
 }
 
 
@@ -97,7 +180,7 @@ int check_pass(char* password, int height, int width) {
         }
     }
 
-    move(height / 2 + 4, (width - 18) / 2);
+    move(height / 2 - 2, (width - 18) / 2);
     clrtoeol();
     refresh();
 

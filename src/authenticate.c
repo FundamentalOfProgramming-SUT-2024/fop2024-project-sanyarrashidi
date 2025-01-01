@@ -1,8 +1,7 @@
-#include "menus.h"
+#include "authenticate.h"
 
 
-void handle_login() {
-    initscr();
+Player* authenticate(Player* player) {
     int height, width;
     getmaxyx(stdscr, height, width);
     keypad(stdscr, TRUE);
@@ -15,10 +14,10 @@ void handle_login() {
         refresh();
         char command = getch();
         if (command == 27)
-            endwin();
+            return NULL;
         else {
             clear();
-            new_user(height, width);
+            new_user(player, height, width);
         }
     }
     else {
@@ -28,42 +27,45 @@ void handle_login() {
         mvprintw(height / 2 - 2, (width - 26) / 2, "Press G to play as guest.");
         mvprintw(height / 2, (width - 20) / 2, "Press ESC to leave.");
         refresh();
-        char command = getch();
-        clear();
+        char command;
         rewind(data_file);
-        if (tolower(command) == 'n')
-            new_user(height, width);
-        else if (tolower(command) == 'l')
-            login(data_file, height, width);
-        else if (tolower(command) == 'g') {}
-            //start function
-        else if (command == 27)
-            endwin();
-        else    
-            endwin();
+        while(command = getch()) {
+            if (tolower(command) == 'n') {
+                clear();
+                return new_user(player, height, width);
+            }
+            else if (tolower(command) == 'l') {
+                clear();
+                return login(data_file, player, height, width);
+            }
+            else if (tolower(command) == 'g') 
+                break;
+                //start function
+            else if (command == 27)
+                return NULL;
+        }
     }
     fclose(data_file);
-    endwin();
+    return NULL;
 }
 
 
-void new_user(int height, int width) {
-    Player new_player;
-    new_player.username = (char*) calloc(50, sizeof(char));
-    new_player.password = (char*) calloc(50, sizeof(char));
-    new_player.email = (char*) calloc(50, sizeof(char));
+Player* new_user(Player* new_player, int height, int width) {
+    new_player->username = (char*) calloc(50, sizeof(char));
+    new_player->password = (char*) calloc(50, sizeof(char));
+    new_player->email = (char*) calloc(50, sizeof(char));
 
     mvprintw(height / 2 - 10, (width - 20) / 2, "Enter your username:");
     move(height / 2 - 8, (width - 18) / 2);
     refresh();
-    getstr(new_player.username);
+    getstr(new_player->username);
     int pass_is_valid = 0;
     while (!pass_is_valid) {
         mvprintw(height / 2 - 4, (width - 20) / 2, "Enter your password:");
         move(height / 2 - 2, (width - 18) / 2);
         refresh();
-        getstr(new_player.password);
-        pass_is_valid = check_pass(new_player.password, height, width);
+        getstr(new_player->password);
+        pass_is_valid = check_pass(new_player->password, height, width);
     }
 
     int email_is_valid = 0;
@@ -71,17 +73,19 @@ void new_user(int height, int width) {
         mvprintw(height / 2 + 2, (width - 20) / 2, "Enter your email:");
         move(height / 2 + 4, (width - 18) / 2);
         refresh();
-        getstr(new_player.email);
-        email_is_valid = check_email(new_player.email, height, width);
+        getstr(new_player->email);
+        email_is_valid = check_email(new_player->email, height, width);
     }
 
     FILE* data_file = fopen("data/players.csv", "a");
-    fprintf(data_file, "%s,%s,%s\n", new_player.username, new_player.password, new_player.email);
+    fprintf(data_file, "%s,%s,%s\n", new_player->username, new_player->password, new_player->email);
     fclose(data_file);
+
+    return new_player;
 }
 
 
-void login(FILE* data_file, int height, int width) {
+Player* login(FILE* data_file, Player* selected_player, int height, int width) {
     attron(A_UNDERLINE);
     mvprintw(10, (width - 60) / 2, "Enter the number of player you want to log into:");
     refresh();
@@ -115,7 +119,7 @@ void login(FILE* data_file, int height, int width) {
     curs_set(1);
     echo();
     clear();
-    Player selected_player = *(players + player_num - 1);
+    selected_player = players + player_num - 1;
     char* entered_pass = (char*) calloc(100, sizeof(char));
     int attempts = 3;
     while (attempts > 0) {
@@ -127,25 +131,25 @@ void login(FILE* data_file, int height, int width) {
         }
         move(height / 2 - 8, 0);
         clrtoeol();
-        mvprintw(height / 2 - 10, (width - (40 + strlen(selected_player.username))) / 2, "Enter password for \"%s\":(%d attempts left)", selected_player.username, attempts);
+        mvprintw(height / 2 - 10, (width - (40 + strlen(selected_player->username))) / 2, "Enter password for \"%s\":(%d attempts left)", selected_player->username, attempts);
         refresh();
         move(height / 2 - 8, (width - 18) / 2);
         getstr(entered_pass);
-        if (!strcmp(entered_pass ,selected_player.password))
+        if (!strcmp(entered_pass ,selected_player->password))
             break;
         else
             attempts--;
     }
 
     if (attempts) {
-        // user entered
+        return selected_player;
     }
     else {
         clear();
         mvprintw(height / 2 - 10, (width - 28) / 2, "Too many attempts!");
         refresh();
         getch();
-        endwin();
+        return NULL;
     }
 }
 

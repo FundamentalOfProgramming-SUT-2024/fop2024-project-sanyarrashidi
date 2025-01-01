@@ -1,9 +1,12 @@
 #include<stdio.h>
 #include<ncurses.h>
-#include"menus.h"
+#include"authenticate.h"
 
 
 int main() {
-    handle_login();
+    initscr();
+    Player* a = (Player*) calloc(1, sizeof(Player));
+    a = authenticate(a);
+    endwin();
     return 0;
 }

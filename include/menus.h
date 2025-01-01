@@ -3,6 +3,14 @@
 #include<string.h>
 #include<ncurses.h>
 
+
+typedef struct {
+    char* username;
+    char* password;
+    char* email;
+} Player;
+
+
 void handle_login();
 void new_user(int, int);
 void login();

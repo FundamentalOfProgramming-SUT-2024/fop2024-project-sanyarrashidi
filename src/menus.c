@@ -1,13 +1,6 @@
 #include "menus.h"
 
 
-typedef struct {
-    char message;
-    int x;
-    int y;
-} Button;
-
-
 void handle_login() {
     initscr();
     int height, width;
@@ -38,21 +31,22 @@ void handle_login() {
 
 
 void new_user(int height, int width) {
-    char* username = (char*) calloc(50, sizeof(char));
-    char* password = (char*) calloc(50, sizeof(char));
-    char* email = (char*) calloc(50, sizeof(char));
+    Player new_player;
+    new_player.username = (char*) calloc(50, sizeof(char));
+    new_player.password = (char*) calloc(50, sizeof(char));
+    new_player.email = (char*) calloc(50, sizeof(char));
 
     mvprintw(height / 2 - 10, (width - 20) / 2, "Enter your username:");
     move(height / 2 - 8, (width - 18) / 2);
     refresh();
-    getstr(username);
+    getstr(new_player.username);
     int pass_is_valid = 0;
     while (!pass_is_valid) {
         mvprintw(height / 2 - 4, (width - 20) / 2, "Enter your password:");
         move(height / 2 - 2, (width - 18) / 2);
         refresh();
-        getstr(password);
-        pass_is_valid = check_pass(password, height, width);
+        getstr(new_player.password);
+        pass_is_valid = check_pass(new_player.password, height, width);
     }
 
     int email_is_valid = 0;
@@ -60,9 +54,11 @@ void new_user(int height, int width) {
         mvprintw(height / 2 + 2, (width - 20) / 2, "Enter your email:");
         move(height / 2 + 4, (width - 18) / 2);
         refresh();
-        getstr(email);
-        email_is_valid = check_email(email, height, width);
+        getstr(new_player.email);
+        email_is_valid = check_email(new_player.email, height, width);
     }
+
+
 }
 
 

@@ -54,9 +54,10 @@ Player* authenticate(Player* player) {
                 curs_set(1);
                 return login(data_file, player, height, width);
             }
-            else if (tolower(command) == 'g') 
-                break;
-                //start function
+            else if (tolower(command) == 'g') {
+                player->username = ".guest";
+                return player;
+            }
             // ESC key entered
             else if (command == 27)
                 return NULL;
@@ -103,7 +104,7 @@ Player* new_user(Player* new_player, int height, int width) {
     fprintf(data_file, "%s,%s,%s\n", new_player->username, new_player->password, new_player->email);
     fclose(data_file);
     FILE* stat_file = fopen("data/stats.csv", "a");
-    fprintf(stat_file, "%s,0,0,0,0\n", new_player->username);
+    fprintf(stat_file, "%s,0,0,0,0,white,medium,\n", new_player->username);
     fclose(stat_file);
     return new_player;
 }
@@ -316,5 +317,9 @@ void get_player_stat(Player* player) {
     player->finished = atoi(stats);
     stats = strtok(NULL, ",");
     player->exp = atoi(stats);
+    stats = strtok(NULL, ",");
+    player->color = stats;
+    stats = strtok(NULL, ",");
+    player->difficulty = stats;
     fclose(stat_file);
 }

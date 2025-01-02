@@ -13,6 +13,8 @@ typedef struct {
     int gold;
     int finished;
     int exp;
+    char* color;
+    char* difficulty;
 } Player;
 
 

@@ -13,6 +13,10 @@ int main() {
         endwin();
         return 0;
     }
+    else if (!strcmp(player->username, ".guest")) {
+        // just new game
+        return 0;
+    }
     get_player_stat(player);
     noecho();
     curs_set(0);

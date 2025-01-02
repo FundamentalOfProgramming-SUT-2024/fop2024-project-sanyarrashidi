@@ -1,5 +1,5 @@
-username,score,gold,finished,exp
-Sanyar,100,400,3,500
-Sina,,50,700,2,1000
-Ali,,200,300,5,2000
-Kaftar,0,0,0,0
+Sina,50,700,2,1000,white,medium,
+Ali,200,300,5,2000,white,medium,
+Kaftar,0,0,0,0,white,medium,
+Mah,0,0,0,0,green,easy,
+Sanyar,0,0,0,0,yellow,hard,

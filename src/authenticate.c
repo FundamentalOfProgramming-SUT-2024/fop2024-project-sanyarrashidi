@@ -4,6 +4,8 @@
 Player* authenticate(Player* player) {
     int height, width;
     getmaxyx(stdscr, height, width);
+    noecho();
+    curs_set(0);
     init_pair(1, COLOR_YELLOW, COLOR_BLACK);
     init_pair(2, COLOR_RED, COLOR_BLACK);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
@@ -22,6 +24,8 @@ Player* authenticate(Player* player) {
             return NULL;
         else {
             clear();
+            echo();
+            curs_set(1);
             new_user(player, height, width);
         }
     }
@@ -40,10 +44,14 @@ Player* authenticate(Player* player) {
         while((command = getch())) {
             if (tolower(command) == 'n') {
                 clear();
+                echo();
+                curs_set(1);
                 return new_user(player, height, width);
             }
             else if (tolower(command) == 'l') {
                 clear();
+                echo();
+                curs_set(1);
                 return login(data_file, player, height, width);
             }
             else if (tolower(command) == 'g') 

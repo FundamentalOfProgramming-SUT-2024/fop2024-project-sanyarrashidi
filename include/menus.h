@@ -9,3 +9,5 @@
 char main_menu(Player*);
 void show_main_menu(Player*);
 void show_profile(Player*);
+void show_scoreboard(Player*);
+int compare_players_by_score(void*, void*);

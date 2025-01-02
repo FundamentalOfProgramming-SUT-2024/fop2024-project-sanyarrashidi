@@ -14,7 +14,7 @@ char main_menu(Player* player) {
             return 'l';
             break;
         case 's':
-            // code
+            show_scoreboard(player);
             break;
         case 'p':
             show_profile(player);
@@ -88,4 +88,80 @@ void show_profile(Player* player) {
     refresh();
     attroff(COLOR_PAIR(4));
     getch();
+}
+
+
+void show_scoreboard(Player* player) {
+    clear();
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    mvprintw(4, (width - 38) / 2, "Press ANY KEY to go back to main menu.");
+    refresh();
+    init_pair(1, COLOR_BLACK, COLOR_YELLOW);
+    init_pair(2, COLOR_BLACK, COLOR_CYAN);
+    init_pair(3, COLOR_BLACK, COLOR_RED);
+    init_pair(4, COLOR_BLACK, COLOR_GREEN);
+    Player* players = (Player*) calloc(100, sizeof(Player));
+    FILE* stats_file = fopen("data/stats.csv", "r");
+    char* read_stats = (char*) calloc(200, sizeof(char));
+    char* player_inf = (char*) calloc(100, sizeof(char));
+    fgets(read_stats, 200, stats_file);
+    int player_counter = 0;
+    while(fgets(read_stats, 200, stats_file)) {
+        //players[player_counter].username = (char*) calloc(1000, sizeof(char));
+        player_inf = strtok(read_stats, ",");
+        players[player_counter].username = strdup(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[player_counter].score = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[player_counter].gold = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[player_counter].finished = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[player_counter].exp = atoi(player_inf);
+        player_counter++;
+    }
+
+    qsort(players, player_counter, sizeof(Player), compare_players_by_score);
+    mvprintw(8, (width - 68) / 2, " #|      username      |  score   |   gold   | finished | experience");
+    for (int i = 0; i < player_counter; i++) {
+        mvprintw(10 + 2 * (i - 1) + 1, (width - 68) / 2, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+        refresh();
+        if (!strcmp(players[i].username, player->username)) {
+            attron(A_BOLD | COLOR_PAIR(4));
+            mvprintw(10 + 2 * i, (width - 68) / 2 - 2, "->%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            refresh();
+            attroff(A_BOLD | COLOR_PAIR(4));
+        }
+        else if (i == 0) {
+            attron(COLOR_PAIR(1));
+            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            refresh();
+            attroff(COLOR_PAIR(1));
+        }
+        else if (i == 1) {
+            attron(COLOR_PAIR(2));
+            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            refresh();
+            attroff(COLOR_PAIR(2));
+        }
+        else if (i == 2) {
+            attron(COLOR_PAIR(3));
+            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            refresh();
+            attroff(COLOR_PAIR(3));
+        }
+        else {
+            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            refresh();
+        }
+    }
+    getch();
+}
+
+
+int compare_players_by_score(void* first, void* second) {
+    Player* player_1 = (Player*) first;
+    Player* player_2 = (Player*) second;
+    return player_2->score - player_1->score; 
 }

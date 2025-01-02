@@ -4,11 +4,16 @@
 Player* authenticate(Player* player) {
     int height, width;
     getmaxyx(stdscr, height, width);
-    keypad(stdscr, TRUE);
+    init_pair(1, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(2, COLOR_RED, COLOR_BLACK);
+    init_pair(3, COLOR_GREEN, COLOR_BLACK);
     FILE* data_file = fopen("data/players.csv", "r");
     fseek(data_file, 0, SEEK_END);
     if (!ftell(data_file)) {
+        attron(COLOR_PAIR(3));
         mvprintw(height / 2, (width - 25) / 2, "You are the first player!");
+        refresh();
+        attroff(COLOR_PAIR(3));
         mvprintw(height / 2 + 1, (width - 36) / 2, "Press ANY KEY to create your profile.");
         mvprintw(height / 2 + 2, (width - 20) / 2, "Press ESC to leave.");
         refresh();
@@ -21,7 +26,10 @@ Player* authenticate(Player* player) {
         }
     }
     else {
+        attron(COLOR_PAIR(1));
         mvprintw(height / 2 - 8, (width - 8) / 2, "Welcome!");
+        refresh();
+        attroff(COLOR_PAIR(1));
         mvprintw(height / 2 - 6, (width - 32) / 2, "Press L to log into your account.");
         mvprintw(height / 2 - 4, (width - 32) / 2, "Press N to create a new account.");
         mvprintw(height / 2 - 2, (width - 26) / 2, "Press G to play as guest.");
@@ -29,7 +37,7 @@ Player* authenticate(Player* player) {
         refresh();
         char command;
         rewind(data_file);
-        while(command = getch()) {
+        while((command = getch())) {
             if (tolower(command) == 'n') {
                 clear();
                 return new_user(player, height, width);
@@ -41,6 +49,7 @@ Player* authenticate(Player* player) {
             else if (tolower(command) == 'g') 
                 break;
                 //start function
+            // ESC key entered
             else if (command == 27)
                 return NULL;
         }
@@ -80,7 +89,9 @@ Player* new_user(Player* new_player, int height, int width) {
     FILE* data_file = fopen("data/players.csv", "a");
     fprintf(data_file, "%s,%s,%s\n", new_player->username, new_player->password, new_player->email);
     fclose(data_file);
-
+    FILE* stat_file = fopen("data/stats.csv", "a");
+    fprintf(stat_file, "%s,0,0,0,0\n", new_player->username);
+    fclose(stat_file);
     return new_player;
 }
 
@@ -102,18 +113,21 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
         refresh();
         player_inf = strtok(NULL, ",");
         players[player_counter].password = strdup(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[player_counter].email = strdup(player_inf);
         player_counter++;
     }
     
     noecho();
     curs_set(0);
+    // converts ascii to digits
     int player_num = getch() - 48;
     while(player_num - 1 >= player_counter) {
-        attron(A_BOLD);
+        attron(COLOR_PAIR(2) | A_BOLD);
         mvprintw(7, (width - 14) / 2, "Invalid digit!");
         refresh();
-        attroff(A_BOLD);
-        player_num = getch();
+        attroff(COLOR_PAIR(2) | A_BOLD);
+        player_num = getch() - 48;
     }
 
     curs_set(1);
@@ -124,10 +138,10 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
     int attempts = 3;
     while (attempts > 0) {
         if (attempts < 3) {
-            attron(A_BOLD);
+            attron(COLOR_PAIR(2) | A_BOLD);
             mvprintw(7, (width - 20) / 2, "Invalid password!");
             refresh();
-            attroff(A_BOLD);
+            attroff(COLOR_PAIR(2) | A_BOLD);
         }
         move(height / 2 - 8, 0);
         clrtoeol();
@@ -146,8 +160,10 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
     }
     else {
         clear();
+        attron(COLOR_PAIR(2));
         mvprintw(height / 2 - 10, (width - 28) / 2, "Too many attempts!");
         refresh();
+        attroff(COLOR_PAIR(2));
         getch();
         return NULL;
     }
@@ -156,14 +172,14 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
 
 int check_pass(char* password, int height, int width) {
     clear_pass_errors();
-    attron(A_BOLD);
+    attron(A_BOLD | COLOR_PAIR(2));
     if (strlen(password) < 7) {
         mvprintw(7, (width - 50) / 2, "Your password should contain at least 7 characters!");
         refresh();
         move(height / 2 - 2, 0);
         clrtoeol();
         refresh();
-        attroff(A_BOLD);
+        attroff(A_BOLD | COLOR_PAIR(2));
         return 0;
     }
 
@@ -179,7 +195,7 @@ int check_pass(char* password, int height, int width) {
             digit_flag = 1;
         
         if (upper_flag && lower_flag && digit_flag) {
-            attroff(A_BOLD);
+            attroff(A_BOLD | COLOR_PAIR(2));
             return 1;
         }
     }
@@ -201,7 +217,7 @@ int check_pass(char* password, int height, int width) {
         refresh();
     }
 
-    attroff(A_BOLD);
+    attroff(A_BOLD | COLOR_PAIR(2));
     return 0;
 }
 
@@ -232,9 +248,9 @@ int check_email(char* email, int height, int width) {
     }
 
     if (!atsign_index || !dot_index || dot_index + 1 <= atsign_index || dot_index == strlen(email) - 1) {
-        attron(A_BOLD);
+        attron(A_BOLD | COLOR_PAIR(2));
         mvprintw(7, (width - 24) / 2, "Email format is invalid!");
-        attroff(A_BOLD);
+        attroff(A_BOLD | COLOR_PAIR(2));
         move(height / 2 + 4, 0);
         clrtoeol();
         refresh();
@@ -242,4 +258,25 @@ int check_email(char* email, int height, int width) {
     }
 
     return 1;
+}
+
+
+void get_player_stat(Player* player) {
+    FILE* stat_file = fopen("data/stats.csv", "r");
+    char* read_stat = (char*) calloc(200, sizeof(char));
+    fgets(read_stat, 200, stat_file);
+    char* stats = strtok(read_stat, ",");
+    while(strcmp(stats, player->username)) {
+        fgets(read_stat, 200, stat_file);
+        stats = strtok(read_stat, ",");
+    }
+    stats = strtok(NULL, ",");
+    player->score = atoi(stats);
+    stats = strtok(NULL, ",");
+    player->gold = atoi(stats);
+    stats = strtok(NULL, ",");
+    player->finished = atoi(stats);
+    stats = strtok(NULL, ",");
+    player->exp = atoi(stats);
+    fclose(stat_file);
 }

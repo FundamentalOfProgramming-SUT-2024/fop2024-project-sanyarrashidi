@@ -108,7 +108,6 @@ void show_scoreboard(Player* player) {
     fgets(read_stats, 200, stats_file);
     int player_counter = 0;
     while(fgets(read_stats, 200, stats_file)) {
-        //players[player_counter].username = (char*) calloc(1000, sizeof(char));
         player_inf = strtok(read_stats, ",");
         players[player_counter].username = strdup(player_inf);
         player_inf = strtok(NULL, ",");

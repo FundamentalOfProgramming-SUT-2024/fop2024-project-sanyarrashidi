@@ -72,10 +72,15 @@ Player* new_user(Player* new_player, int height, int width) {
     new_player->password = (char*) calloc(50, sizeof(char));
     new_player->email = (char*) calloc(50, sizeof(char));
 
-    mvprintw(height / 2 - 10, (width - 20) / 2, "Enter your username:");
-    move(height / 2 - 8, (width - 18) / 2);
-    refresh();
-    getstr(new_player->username);
+    int username_is_valid = 0;
+    while (!username_is_valid) {
+        mvprintw(height / 2 - 10, (width - 20) / 2, "Enter your username:");
+        move(height / 2 - 8, (width - 18) / 2);
+        refresh();
+        getstr(new_player->username);
+        username_is_valid = check_username(new_player->username, height, width);
+    }
+
     int pass_is_valid = 0;
     while (!pass_is_valid) {
         mvprintw(height / 2 - 4, (width - 20) / 2, "Enter your password:");
@@ -175,6 +180,31 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
         getch();
         return NULL;
     }
+}
+
+
+int check_username(char* username, int height, int width) {
+    move(7, 0);
+    clrtoeol();
+    refresh();
+    attron(A_BOLD | COLOR_PAIR(2));
+    char* read_playar = (char*) calloc(200, sizeof(char));
+    FILE* data_file = fopen("data/players.csv", "r");
+    while (fgets(read_playar, 200, data_file)) {
+        char* saved_username = strtok(read_playar, ",");
+        if (!strcmp(saved_username, username)) {
+            mvprintw(7, (width - 23) / 2, "Username already taken!");
+            refresh();
+            move(height / 2 - 8, 0);
+            clrtoeol();
+            refresh();
+            attroff(A_BOLD | COLOR_PAIR(2));
+            return 0;
+        }
+    }
+    attroff(A_BOLD | COLOR_PAIR(2));
+    fclose(data_file);
+    return 1;
 }
 
 

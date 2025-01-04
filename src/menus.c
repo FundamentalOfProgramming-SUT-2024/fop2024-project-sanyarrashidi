@@ -53,8 +53,8 @@ void show_main_menu(Player* player) {
     mvprintw(height / 2 - 4, (width - 20) / 2, "Press L for LOAD GAME.");
     mvprintw(height / 2 - 2, (width - 28) / 2, "Press S to see the SCOREBOARD.");
     mvprintw(height / 2, (width - 26) / 2, "Press P to see your PROFILE.");
-    mvprintw(height / 2 + 2, (width - 26) / 2, "Press A to go to SETTINGS.");
-    mvprintw(height / 2 + 4, (width - 20) / 2, "Press ESC to leave.");
+    mvprintw(height / 2 + 2, (width - 24) / 2, "Press A to go to SETTINGS.");
+    mvprintw(height / 2 + 4, (width - 18) / 2, "Press ESC to leave.");
     refresh();
     attroff(COLOR_PAIR(2));
 }
@@ -120,28 +120,28 @@ void show_scoreboard(Player* player) {
         mvprintw(10 + 2 * (i - 1) + 1, (width - 68) / 2, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
         refresh();
         if (!strcmp(players[i].username, player->username)) {
-            attron(A_BOLD | COLOR_PAIR(4));
+            attron(COLOR_PAIR(4));
             mvprintw(10 + 2 * i, (width - 68) / 2 - 2, "->%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
             refresh();
-            attroff(A_BOLD | COLOR_PAIR(4));
+            attroff(COLOR_PAIR(4));
         }
         else if (i == 0) {
-            attron(COLOR_PAIR(1));
+            attron(COLOR_PAIR(1) | A_BOLD);
             mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
             refresh();
-            attroff(COLOR_PAIR(1));
+            attroff(COLOR_PAIR(1) | A_BOLD);
         }
         else if (i == 1) {
-            attron(COLOR_PAIR(2));
+            attron(COLOR_PAIR(2) | A_BOLD);
             mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
             refresh();
-            attroff(COLOR_PAIR(2));
+            attroff(COLOR_PAIR(2) | A_BOLD);
         }
         else if (i == 2) {
-            attron(COLOR_PAIR(3));
+            attron(COLOR_PAIR(3) | A_BOLD);
             mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
             refresh();
-            attroff(COLOR_PAIR(3));
+            attroff(COLOR_PAIR(3) | A_BOLD);
         }
         else {
             mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);

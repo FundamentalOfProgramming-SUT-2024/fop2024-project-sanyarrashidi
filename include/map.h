@@ -3,6 +3,7 @@
 #include<string.h>
 #include<ncurses.h>
 #include<time.h>
+#include<stdbool.h>
 
 
 typedef struct {
@@ -13,6 +14,7 @@ typedef struct {
     int door_count;
     int* doors_x;
     int* doors_y;
+    char type; // 'R' for regular, 'E' for enchant, 'F' for fight, 'T' for treasure, 
 } Room;
 
 
@@ -21,6 +23,7 @@ typedef struct {
     int x;
     int y;
     int edge;
+    bool unlocked;
 } Door;
 
 

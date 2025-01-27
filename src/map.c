@@ -9,6 +9,8 @@ void generate_map() {
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
     init_pair(3, COLOR_YELLOW, COLOR_BLACK);
     init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_pair(5, COLOR_CYAN, COLOR_BLACK);
+    init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     int total_rooms = rand() % 2 + 6;
     Room** rooms = (Room**) calloc(total_rooms, sizeof(Room*));
     rooms = generate_rooms(rooms, total_rooms);
@@ -27,6 +29,7 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
     int height, width;
     getmaxyx(stdscr, height, width);
     int room_counter = 0;
+    int to_enchant_room_index = rand() % (total_rooms - 3) + 1;
     while (room_counter < total_rooms) {
         Room* new_room = (Room*) malloc(sizeof(Room));
         new_room->height = rand() % 9 + 6;
@@ -36,7 +39,7 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
         if (!check_rooms(rooms, new_room, room_counter)) 
             continue;
 
-        new_room->door_count = rand() % 2 + 2;
+        new_room->door_count = 3;
         new_room->doors_x = (int*) calloc(new_room->door_count, sizeof(int));
         new_room->doors_y = (int*) calloc(new_room->door_count, sizeof(int));
         // placing each door on 1 edge
@@ -84,6 +87,26 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
     }
 
     rooms[0]->door_count = 1;
+    rooms[0]->type = 'R';
+
+    for (int i = 1; i < total_rooms - 1; i++) {
+        if (i == to_enchant_room_index) {
+            rooms[i]->type = 'R';
+            rooms[i + 1]->type = 'E';
+            rooms[i + 1]->door_count = 1;
+            rooms[i + 1]->doors_x[1] = NULL;
+            rooms[i + 1]->doors_y[1] = NULL;
+            rooms[i + 1]->doors_x[2] = NULL;
+            rooms[i + 1]->doors_y[2] = NULL;
+            i++;
+        }
+        else {
+            rooms[i]->type = 'R';
+            rooms[i]->door_count = 2;
+            rooms[i]->doors_x[2] = NULL;
+            rooms[i]->doors_y[2] = NULL;
+        }
+    }
 
     for (int i = 1; i < rooms[total_rooms - 1]->door_count; i++) {
         rooms[total_rooms - 1]->doors_x[i] = NULL;
@@ -91,6 +114,7 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
     }
 
     rooms[total_rooms - 1]->door_count = 1;
+    rooms[total_rooms - 1]->type = 'R';
 
     return rooms;
 }
@@ -115,31 +139,31 @@ void display_rooms(Room** rooms, int total_rooms) {
     clear();
     for (int i = 0; i < total_rooms; i++) {
         move(rooms[i]->corner_y, rooms[i]->corner_x);
-        attron(A_UNDERLINE | COLOR_PAIR(4));
+        rooms[i]->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(5)) : attron (A_UNDERLINE | COLOR_PAIR(4));
         for (int j = 0; j < rooms[i]->width; j++) {
             printw("-");
         }
-        attroff(A_UNDERLINE | COLOR_PAIR(4));
+        rooms[i]->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(5)) : attroff(A_UNDERLINE | COLOR_PAIR(4));
         
         for (int j = 0; j < rooms[i]->height - 2; j++) {
             move(rooms[i]->corner_y + j + 1, rooms[i]->corner_x);
-            attron(A_UNDERLINE | COLOR_PAIR(3));
+            rooms[i]->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(3));
             printw("|");
-            attroff(A_UNDERLINE | COLOR_PAIR(3));
+            rooms[i]->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(3));
             for (int k = 0; k < rooms[i]->width - 2; k++) {
                 printw(".");
             }
-            attron(A_UNDERLINE | COLOR_PAIR(3));
+            rooms[i]->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(3));
             printw("|");
-            attroff(A_UNDERLINE | COLOR_PAIR(3));
+            rooms[i]->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(3));
         }
 
         move(rooms[i]->corner_y + rooms[i]->height - 1, rooms[i]->corner_x);
-        attron(A_UNDERLINE | COLOR_PAIR(4));
+        rooms[i]->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(5)) : attron (A_UNDERLINE | COLOR_PAIR(4));
         for (int j = 0; j < rooms[i]->width; j++) {
             printw("-");
         }
-        attroff(A_UNDERLINE | COLOR_PAIR(4));
+        rooms[i]->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(5)) : attroff(A_UNDERLINE | COLOR_PAIR(4));
 
         for (int j = 0; j < rooms[i]->door_count; j++) {
             move(rooms[i]->doors_y[j], rooms[i]->doors_x[j]);
@@ -184,19 +208,27 @@ void generate_corridors(Room** rooms, int total_rooms) {
     getmaxyx(stdscr, height, width);
 
     for (int i = 1; i < total_rooms; i++) {
-        Room* prev = rooms[i-1];
+        Room* prev;
+        if (rooms[i-1]->type == 'E') {
+            prev = rooms[i-2];
+        }
+        else {
+            prev = rooms[i-1];
+        }
         Room* curr = rooms[i];
 
         int chosen_door_prev = rand() % prev->door_count;
-        if (mvinch(prev->doors_y[chosen_door_prev], prev->doors_x[chosen_door_prev]) == '+') {
-            continue;
+        while (mvinch(prev->doors_y[chosen_door_prev], prev->doors_x[chosen_door_prev]) == '+') {
+            chosen_door_prev = rand() % prev->door_count;
         }
+        
         mvaddch(prev->doors_y[chosen_door_prev], prev->doors_x[chosen_door_prev], '+');
 
         int chosen_door_curr = rand() % curr->door_count;
-        if (mvinch(curr->doors_y[chosen_door_curr], curr->doors_x[chosen_door_curr]) == '+') {
-            continue;
+        while (mvinch(curr->doors_y[chosen_door_curr], curr->doors_x[chosen_door_curr]) == '+') {
+            chosen_door_curr = rand() % curr->door_count;
         }
+        
         mvaddch(curr->doors_y[chosen_door_curr], curr->doors_x[chosen_door_curr], '+');
         
         Door closest_prev = {prev, prev->doors_x[chosen_door_prev], prev->doors_y[chosen_door_prev]};

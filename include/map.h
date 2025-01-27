@@ -16,7 +16,21 @@ typedef struct {
 } Room;
 
 
+typedef struct {
+    Room* parent;
+    int x;
+    int y;
+    int edge;
+} Door;
+
+
 void generate_map();
 Room** generate_rooms(Room**, int);
+void generate_room_doors(Room**, int);
 int check_rooms(Room**, Room*, int);
 void display_rooms(Room**, int);
+int compare_rooms(const void*, const void*);
+void generate_corridors(Room**, int);
+void draw_corridor(Door, Door, Room**, int);
+int is_door_available(int, int);
+void connect_doors(Door, Door);

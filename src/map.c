@@ -76,6 +76,8 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
                 break;
             }
         }
+
+        new_room->visited = false;
         rooms[room_counter] = new_room;
         room_counter++;
     }
@@ -89,6 +91,7 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
 
     rooms[0]->door_count = 1;
     rooms[0]->type = 'R';
+    rooms[0]->visited = true;
 
     for (int i = 1; i < total_rooms - 1; i++) {
         if (i == to_enchant_room_index) {

@@ -20,6 +20,7 @@ Room** generate_map() {
         mvaddch(4, i, '-');
         attroff(A_UNDERLINE);
     }
+    clear(); // temp
     generate_corridors(rooms, total_rooms);
 
     return rooms;
@@ -177,9 +178,14 @@ void display_rooms(Room** rooms, int total_rooms) {
         }
 
         int num_pillars = rand() % 2 + 1;
+        rooms[i]->pillar_count = num_pillars;
         for (int j = 0; j < num_pillars; j++) {
             int pillar_x = rooms[i]->corner_x + 2 + rand() % (rooms[i]->width - 4);
             int pillar_y = rooms[i]->corner_y + 2 + rand() % (rooms[i]->height - 4);
+            rooms[i]->pillars_x = (int*) calloc(num_pillars, sizeof(int));
+            rooms[i]->pillars_y = (int*) calloc(num_pillars, sizeof(int));
+            rooms[i]->pillars_x[j] = pillar_x;
+            rooms[i]->pillars_y[j] = pillar_y;
             while (mvinch(pillar_y + 1, pillar_x) == '/' ||
                 mvinch(pillar_y - 1, pillar_x) == '/' || 
                 mvinch(pillar_y, pillar_x + 1) == '/' || 
@@ -195,6 +201,48 @@ void display_rooms(Room** rooms, int total_rooms) {
         }
     }
 }
+
+void display_single_room(Room* Room) {
+    move(Room->corner_y, Room->corner_x);
+    Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(5)) : attron (A_UNDERLINE | COLOR_PAIR(4));
+    for (int j = 0; j < Room->width; j++) {
+        printw("-");
+    }
+    Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(5)) : attroff(A_UNDERLINE | COLOR_PAIR(4));
+    
+    for (int j = 0; j < Room->height - 2; j++) {
+        move(Room->corner_y + j + 1, Room->corner_x);
+        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(3));
+        printw("|");
+        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(3));
+        for (int k = 0; k < Room->width - 2; k++) {
+            printw(".");
+        }
+        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(3));
+        printw("|");
+        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(3));
+    }
+
+    move(Room->corner_y + Room->height - 1, Room->corner_x);
+    Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(5)) : attron (A_UNDERLINE | COLOR_PAIR(4));
+    for (int j = 0; j < Room->width; j++) {
+        printw("-");
+    }
+    Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(5)) : attroff(A_UNDERLINE | COLOR_PAIR(4));
+
+    for (int j = 0; j < Room->door_count; j++) {
+        if (Room->door_count == 3 && Room->doors_x[j] == Room->hidden_x[0]) {
+            continue;
+        }
+        move(Room->doors_y[j], Room->doors_x[j]);
+        printw("+");
+    }
+
+    for (int j = 0; j < Room->pillar_count; j++) {
+        mvaddch(Room->pillars_y[j], Room->pillars_x[j], 'O');
+    }
+}
+
 
 
 int compare_rooms(const void* a, const void* b) {
@@ -260,6 +308,13 @@ void generate_corridors(Room** rooms, int total_rooms) {
         } 
         else {
             closest_curr.edge = 3;
+        }
+
+        if (closest_curr.parent->type == 'E') {
+            closest_prev.parent->hidden_x = (int*) calloc(1, sizeof(int));
+            closest_prev.parent->hidden_y = (int*) calloc(1, sizeof(int));
+            closest_prev.parent->hidden_x[0] = closest_prev.x;
+            closest_prev.parent->hidden_y[0] = closest_prev.y;
         }
         
         draw_corridor(closest_prev, closest_curr, rooms, total_rooms);
@@ -680,4 +735,15 @@ char** save_map() {
     }
 
     return saved_map;
+}
+
+
+Room* find_room_by_door(Room** rooms, int y, int x) {
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < rooms[i]->door_count; j++) {
+            if (rooms[i]->doors_x[j] == x && rooms[i]->doors_y[j] == y) {
+                return rooms[i];
+            }
+        }
+    }
 }

@@ -9,3 +9,4 @@
 
 void game_ui(Player*);
 void move_player(Player*, int, int);
+bool found_hidden_door(int, int, int, int);

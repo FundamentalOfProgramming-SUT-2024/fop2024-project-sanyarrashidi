@@ -9,12 +9,23 @@ void game_ui(Player* player) {
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     Room** rooms = generate_map();
+    refresh();
     char** map = save_map();
-    refresh(); // temporary for testing
+    // clear();
+    display_single_room(rooms[0]);
     char command;
     int current_y = rooms[0]->corner_y + 1;
     int current_x = rooms[0]->corner_x + 1;
     char prev_char = (char) mvinch(current_y, current_x);
+    int hidden_door_x, hidden_door_y;
+    bool found_hidden = false;
+    for (int i = 0; i < 8; i++) {
+        if (rooms[i]->door_count == 3) {
+            hidden_door_x = rooms[i]->hidden_x[0];
+            hidden_door_y = rooms[i]->hidden_y[0];
+            break;
+        }
+    }
 
     move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
     while ((command = getch()) != 'q') {
@@ -108,6 +119,19 @@ void game_ui(Player* player) {
             break;
         }
 
+        if (prev_char == '+') {
+            Room* visited_room = find_room_by_door(rooms, current_y, current_x);
+            if (!visited_room->visited) {
+                visited_room->visited = true;
+                display_single_room(visited_room);
+                move_player(player, current_y, current_x);
+            }
+        }
+
+        if (!found_hidden && found_hidden_door(current_y, current_x, hidden_door_y, hidden_door_x)) {
+            found_hidden = true;
+            mvaddch(hidden_door_y, hidden_door_x, '$');
+        }
         move(current_y, current_x);
     }
 }
@@ -138,4 +162,22 @@ void move_player(Player* player, int y, int x) {
         attroff(COLOR_PAIR(4));
     }
     attroff(A_BOLD);
+}
+
+
+bool found_hidden_door(int y, int x, int door_y, int door_x) {
+    if (door_y == y - 1 && door_x == x) {
+        return true;
+    }
+    else if (door_y == y + 1 && door_x == x) {
+        return true;
+    }
+    else if (door_y == y && door_x == x - 1) {
+        return true;
+    }
+    else if (door_y == y && door_x == x + 1) {
+        return true;
+    }
+
+    return false;
 }

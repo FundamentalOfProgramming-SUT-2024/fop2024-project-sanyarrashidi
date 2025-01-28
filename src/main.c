@@ -1,7 +1,6 @@
 #include<stdio.h>
 #include<ncurses.h>
-#include"menus.h"
-#include"map.h"
+#include "game.h"
 
 
 int main() {
@@ -23,7 +22,7 @@ int main() {
     curs_set(0);
     char result = main_menu(player);
     if (result == 'n')
-        generate_map();
+        game_ui(player);
     echo();
     curs_set(1);
     endwin();

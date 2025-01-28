@@ -3,7 +3,6 @@
 #include<string.h>
 #include<ncurses.h>
 #include<time.h>
-#include<stdbool.h>
 
 
 typedef struct {
@@ -23,11 +22,10 @@ typedef struct {
     int x;
     int y;
     int edge;
-    bool unlocked;
 } Door;
 
 
-void generate_map();
+Room** generate_map();
 Room** generate_rooms(Room**, int);
 void generate_room_doors(Room**, int);
 int check_rooms(Room**, Room*, int);
@@ -37,3 +35,4 @@ void generate_corridors(Room**, int);
 void draw_corridor(Door, Door, Room**, int);
 int is_door_available(int, int);
 void connect_doors(Door, Door);
+char** save_map();

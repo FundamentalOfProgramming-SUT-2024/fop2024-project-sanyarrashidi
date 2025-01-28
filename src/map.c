@@ -1,7 +1,7 @@
 #include "map.h"
 
 
-void generate_map() {
+Room** generate_map() {
     int height, width;
     getmaxyx(stdscr, height, width);
     srand(time(NULL));
@@ -21,7 +21,8 @@ void generate_map() {
         attroff(A_UNDERLINE);
     }
     generate_corridors(rooms, total_rooms);
-    getch();
+
+    return rooms;
 }
 
 
@@ -190,8 +191,6 @@ void display_rooms(Room** rooms, int total_rooms) {
             mvaddch(pillar_y, pillar_x, 'O');
         }
     }
-
-    refresh();
 }
 
 
@@ -433,8 +432,6 @@ void draw_corridor(Door start, Door end, Room** rooms, int total_rooms) {
     default:
         break;
     }
-
-    refresh();
 }
 
 
@@ -644,18 +641,22 @@ void connect_doors(Door start, Door end) {
                 mvaddch(i, current_x - 2, '#');
             }
 
-            mvaddch(end.y, end.x - 1, '#');
-            mvaddch(end.y, end.x - 2, '#');
-            mvaddch(end.y, end.x - 3, '#');
+            for (int i = current_x - 2; i < end.x; i++) {
+                mvaddch(end.y, i, '#');
+            }            
         }
         else if (current_y < end.y) {
             for (int i = current_y; i <= end.y; i++) {
                 mvaddch(i, current_x - 2, '#');
             }
 
+            for (int i = current_x - 2; i < end.x; i++) {
+                mvaddch(end.y, i, '#');
+            }
+        }
+        else {
             mvaddch(end.y, end.x - 1, '#');
             mvaddch(end.y, end.x - 2, '#');
-            mvaddch(end.y, end.x - 3, '#');
         }
         break;
     default:
@@ -664,3 +665,16 @@ void connect_doors(Door start, Door end) {
 }
 
 
+char** save_map() {
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    char** saved_map = (char**) calloc(width, sizeof(char*));
+    for (int i = 0; i < width; i++) {
+        saved_map[i] = (char*) calloc(height, sizeof(char));
+        for (int j = 0; j < height; j++) {
+            saved_map[i][j] = (char) mvinch(j, i);
+        }
+    }
+
+    return saved_map;
+}

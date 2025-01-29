@@ -15,11 +15,6 @@ Room** generate_map() {
     Room** rooms = (Room**) calloc(total_rooms, sizeof(Room*));
     rooms = generate_rooms(rooms, total_rooms);
     display_rooms(rooms, total_rooms);
-    for (int i = 0; i < width; i++) {
-        attron(A_UNDERLINE);
-        mvaddch(4, i, '-');
-        attroff(A_UNDERLINE);
-    }
     clear(); // temp
     generate_corridors(rooms, total_rooms);
 
@@ -239,7 +234,9 @@ void display_single_room(Room* Room) {
     }
 
     for (int j = 0; j < Room->pillar_count; j++) {
+        attron(COLOR_PAIR(5));
         mvaddch(Room->pillars_y[j], Room->pillars_x[j], 'O');
+        attroff(COLOR_PAIR(5));
     }
 }
 
@@ -726,11 +723,11 @@ void connect_doors(Door start, Door end) {
 char** save_map() {
     int height, width;
     getmaxyx(stdscr, height, width);
-    char** saved_map = (char**) calloc(width, sizeof(char*));
-    for (int i = 0; i < width; i++) {
-        saved_map[i] = (char*) calloc(height, sizeof(char));
-        for (int j = 0; j < height; j++) {
-            saved_map[i][j] = (char) mvinch(j, i);
+    char** saved_map = (char**) calloc(height, sizeof(char*));
+    for (int i = 0; i < height; i++) {
+        saved_map[i] = (char*) calloc(width, sizeof(char));
+        for (int j = 0; j < width; j++) {
+            saved_map[i][j] = (char) mvinch(i, j);
         }
     }
 

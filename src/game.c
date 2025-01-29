@@ -2,6 +2,8 @@
 
 
 void game_ui(Player* player) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
     init_pair(3, COLOR_YELLOW, COLOR_BLACK);
@@ -10,9 +12,19 @@ void game_ui(Player* player) {
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     Room** rooms = generate_map();
     refresh();
-    char** map = save_map();
-    // clear();
+    char** corridors = save_map();
+    clear();
     display_single_room(rooms[0]);
+    for (int i = 0; i < width; i++) {
+        attron(A_UNDERLINE);
+        mvaddch(4, i, '-');
+        attroff(A_UNDERLINE);
+    }
+    char* prev_gold = (char*) malloc(10 * sizeof(char));
+    sprintf(prev_gold, "%d", player->gold);
+    mvprintw(1, 1, "Your name: %s", player->username);
+    mvprintw(2, 1, "Gold earned: %s", prev_gold);
+    mvprintw(3, 1, "Total gold: %s", prev_gold); // should be updated in the loop
     char command;
     int current_y = rooms[0]->corner_y + 1;
     int current_x = rooms[0]->corner_x + 1;
@@ -27,11 +39,31 @@ void game_ui(Player* player) {
         }
     }
 
+    bool bottom_reached = false;
+    bool top_reached = false;
+    bool left_reached = false;
+    bool right_reached = false;
     move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
     while ((command = getch()) != 'q') {
         char next_char;
+        if (current_y == height - 1) {
+            bottom_reached = true;
+        }
+        else if (current_y == 0) {
+            top_reached = true;
+        }
+        else if (current_x == 0) {
+            left_reached = true;
+        }
+        else if (current_x == width - 1) {
+            right_reached = true;
+        }
+
         switch (command) {
         case '8':
+            if (top_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y - 1, current_x);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char); 
@@ -42,6 +74,9 @@ void game_ui(Player* player) {
             }
             break;
         case '6':
+            if (right_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char);
@@ -52,6 +87,9 @@ void game_ui(Player* player) {
             }
             break;
         case '2':
+            if (bottom_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y + 1, current_x);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char);
@@ -62,6 +100,9 @@ void game_ui(Player* player) {
             }
             break;
         case '4':
+            if (left_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char);
@@ -72,6 +113,9 @@ void game_ui(Player* player) {
             }
             break;
         case '7':
+            if (top_reached || left_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y - 1, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char);
@@ -83,6 +127,9 @@ void game_ui(Player* player) {
             }
             break;
         case '9':
+            if (top_reached || right_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y - 1, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char);
@@ -94,6 +141,9 @@ void game_ui(Player* player) {
             }
             break;
         case '3':
+            if (bottom_reached || right_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y + 1, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char);
@@ -105,6 +155,9 @@ void game_ui(Player* player) {
             }
             break;
         case '1':
+            if (bottom_reached || left_reached) {
+                break;
+            }
             next_char = (char) mvinch(current_y + 1, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
                 mvaddch(current_y, current_x, prev_char);
@@ -132,6 +185,37 @@ void game_ui(Player* player) {
             found_hidden = true;
             mvaddch(hidden_door_y, hidden_door_x, '$');
         }
+
+        move(current_y, current_x);
+
+        if (prev_char == '+' || prev_char == '#' || prev_char == '$') {
+            if (!right_reached && (corridors[current_y][current_x + 1] == '#' || corridors[current_y][current_x + 1] == '+')) {
+                mvaddch(current_y, current_x + 1, corridors[current_y][current_x + 1]);
+            }
+            if (!left_reached && (corridors[current_y][current_x - 1] == '#' || corridors[current_y][current_x - 1] == '+')) {
+                mvaddch(current_y, current_x - 1, corridors[current_y][current_x - 1]);
+            }
+            if (!top_reached && (corridors[current_y - 1][current_x] == '#' || corridors[current_y - 1][current_x] == '+')) {
+                mvaddch(current_y - 1, current_x, corridors[current_y - 1][current_x]);
+            }
+            if (!bottom_reached && (corridors[current_y + 1][current_x] == '#' || corridors[current_y + 1][current_x] == '+')) {
+                mvaddch(current_y + 1, current_x, corridors[current_y + 1][current_x]);
+            }
+            if (!left_reached && !top_reached && (corridors[current_y - 1][current_x - 1] == '#' || corridors[current_y - 1][current_x - 1] == '+')) {
+                mvaddch(current_y - 1, current_x - 1, corridors[current_y - 1][current_x - 1]);
+            }
+            if (!bottom_reached && !left_reached && (corridors[current_y + 1][current_x - 1] == '#' || corridors[current_y + 1][current_x - 1] == '+')) {
+                mvaddch(current_y + 1, current_x - 1, corridors[current_y + 1][current_x - 1]);
+            }
+            if (!top_reached && !right_reached && (corridors[current_y - 1][current_x + 1] == '#' || corridors[current_y - 1][current_x + 1] == '+')) {
+                mvaddch(current_y - 1, current_x + 1, corridors[current_y - 1][current_x + 1]);
+            }
+            if (!bottom_reached && !right_reached && (corridors[current_y + 1][current_x + 1] == '#' || corridors[current_y + 1][current_x + 1] == '+')) {
+                mvaddch(current_y + 1, current_x + 1, corridors[current_y + 1][current_x + 1]);
+            }
+        }
+
+        refresh();
         move(current_y, current_x);
     }
 }

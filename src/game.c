@@ -46,6 +46,10 @@ void game_ui(Player* player) {
     move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
     while ((command = getch()) != 'q') {
         char next_char;
+        move(1, strlen(player->username) + 14);
+        clrtoeol();
+        move(current_y, current_x);
+
         if (current_y == height - 1) {
             bottom_reached = true;
         }
@@ -57,6 +61,12 @@ void game_ui(Player* player) {
         }
         else if (current_x == width - 1) {
             right_reached = true;
+        }
+        else {
+            bottom_reached = false;
+            top_reached = false;
+            left_reached = false;
+            right_reached = false;
         }
 
         switch (command) {
@@ -72,6 +82,9 @@ void game_ui(Player* player) {
                 move_player(player, current_y, current_x);
                 refresh();
             }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
+            }
             break;
         case '6':
             if (right_reached) {
@@ -84,6 +97,9 @@ void game_ui(Player* player) {
                 current_x++;
                 move_player(player, current_y, current_x);
                 refresh();
+            }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
             }
             break;
         case '2':
@@ -98,6 +114,9 @@ void game_ui(Player* player) {
                 move_player(player, current_y, current_x);
                 refresh();
             }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
+            }
             break;
         case '4':
             if (left_reached) {
@@ -110,6 +129,9 @@ void game_ui(Player* player) {
                 current_x--;
                 move_player(player, current_y, current_x);
                 refresh();
+            }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
             }
             break;
         case '7':
@@ -125,6 +147,9 @@ void game_ui(Player* player) {
                 move_player(player, current_y, current_x);
                 refresh();
             }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
+            }
             break;
         case '9':
             if (top_reached || right_reached) {
@@ -138,6 +163,9 @@ void game_ui(Player* player) {
                 current_x++;
                 move_player(player, current_y, current_x);
                 refresh();
+            }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
             }
             break;
         case '3':
@@ -153,6 +181,9 @@ void game_ui(Player* player) {
                 move_player(player, current_y, current_x);
                 refresh();
             }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
+            }
             break;
         case '1':
             if (bottom_reached || left_reached) {
@@ -167,6 +198,9 @@ void game_ui(Player* player) {
                 move_player(player, current_y, current_x);
                 refresh();
             }
+            else {
+                mvprintw(1, width / 2 - 15, "You cannot move there!");
+            }
             break;
         default:
             break;
@@ -177,6 +211,12 @@ void game_ui(Player* player) {
             if (!visited_room->visited) {
                 visited_room->visited = true;
                 display_single_room(visited_room);
+                if (visited_room->type == 'E') {
+                    mvprintw(1, width / 2 - 18, "You have discovered the enchant room!");
+                }
+                else {
+                    mvprintw(1, width / 2 - 15, "You have discovered a new room!");
+                }
                 move_player(player, current_y, current_x);
             }
         }
@@ -184,6 +224,7 @@ void game_ui(Player* player) {
         if (!found_hidden && found_hidden_door(current_y, current_x, hidden_door_y, hidden_door_x)) {
             found_hidden = true;
             mvaddch(hidden_door_y, hidden_door_x, '$');
+            mvprintw(1, width / 2 - 15, "You have found a hidden door!");
         }
 
         move(current_y, current_x);

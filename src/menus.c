@@ -88,12 +88,15 @@ void show_profile(Player* player) {
     mvprintw(height / 2 + 4, width / 4, "Time played: %d", player->exp);
     refresh();
     attroff(COLOR_PAIR(4));
+    attron(COLOR_PAIR(3));
+    mvprintw(height / 2 + 6, width / 4, "Hero: %s", player->hero);
+    attroff(COLOR_PAIR(3));
     attron(COLOR_PAIR(6));
-    mvprintw(height / 2 + 6, width / 4, "Hero color: %s", player->color);
+    mvprintw(height / 2 + 8, width / 4, "Hero color: %s", player->color);
     refresh();
     attroff(COLOR_PAIR(6));
     attron(COLOR_PAIR(2));
-    mvprintw(height / 2 + 8, width / 4, "Game difficulty: %s", player->difficulty);
+    mvprintw(height / 2 + 10, width / 4, "Game difficulty: %s", player->difficulty);
     refresh();
     attroff(COLOR_PAIR(2));
     getch();
@@ -171,6 +174,9 @@ void settings(Player* player) {
         else if (tolower(command) == 'c') {
             change_color(player);
         }
+        else if (tolower(command) == 'h') {
+            change_hero(player);
+        }
         else if (tolower(command) == 'b') {
             break;
         }
@@ -183,6 +189,7 @@ void settings(Player* player) {
     Player* players = extract_players_stats(player_counter);
     for (int i = 0; i < *player_counter; i++) {
         if (!strcmp(players[i].username, player->username)) {
+            players[i].hero = strdup(player->hero);
             players[i].color = strdup(player->color);
             players[i].difficulty = strdup(player->difficulty);
             break;
@@ -192,7 +199,7 @@ void settings(Player* player) {
     refresh();
     FILE* stats_file = fopen("data/stats.csv", "w");
     for (int i = 0; i < *player_counter; i++) {
-        fprintf(stats_file, "%s,%d,%d,%d,%d,%s,%s,\n", players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp, players[i].color, players[i].difficulty);
+        fprintf(stats_file, "%s,%d,%d,%d,%d,%s,%s,%s,\n", players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp, players[i].hero, players[i].color, players[i].difficulty);
     }
     fclose(stats_file);
 }
@@ -204,6 +211,7 @@ void show_settings(Player* player) {
     mvprintw(10, (width - 33) / 2, "Press B to go back to main menu.");
     mvprintw(height / 2 - 6, (width - (44 + strlen(player->difficulty))) / 2, "Press D to change difficulty.(currently on %s)", player->difficulty);
     mvprintw(height / 2 - 2, (width - (44 + strlen(player->color))) / 2, "Press C to change hero color.(currently on %s)", player->color);
+    mvprintw(height / 2 + 2, (width - 46) / 2, "Press H to change hero(currently on %s).", player->hero);
     refresh();
 }
 
@@ -290,6 +298,37 @@ void change_color(Player* player) {
 }
 
 
+void change_hero(Player* player) {
+    clear();
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    mvprintw(10, (width - 28) / 2, "Press P to change hero to \u265F.");
+    mvprintw(height / 2 - 6, (width - 28) / 2, "Press K to change hero to \u265E.");
+    mvprintw(height / 2 - 2, (width - 28) / 2, "Press B to change hero to \u265D.");
+    mvprintw(height / 2 + 2, (width - 28) / 2, "Press R to change hero to \u265C.");
+    refresh();
+    char hero;
+    while ((hero = getch())) {
+        if (tolower(hero) == 'p') {
+            player->hero = "\u265F";
+            break;
+        }
+        else if (tolower(hero) == 'k') {
+            player->hero = "\u265E";
+            break;
+        }
+        else if (tolower(hero) == 'b') {
+            player->hero = "\u265D";
+            break;
+        }
+        else if (tolower(hero) == 'r') {
+            player->hero = "\u265C";
+            break;
+        }
+    }
+}
+
+
 Player* extract_players_stats(int* num_of_players) {
     Player* players = (Player*) calloc(100, sizeof(Player));
     FILE* stats_file = fopen("data/stats.csv", "r");
@@ -306,6 +345,8 @@ Player* extract_players_stats(int* num_of_players) {
         players[*num_of_players].finished = atoi(player_inf);
         player_inf = strtok(NULL, ",");
         players[*num_of_players].exp = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].hero = strdup(player_inf);
         player_inf = strtok(NULL, ",");
         players[*num_of_players].color = strdup(player_inf);
         player_inf = strtok(NULL, ",");

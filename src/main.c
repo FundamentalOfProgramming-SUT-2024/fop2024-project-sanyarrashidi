@@ -1,9 +1,12 @@
 #include<stdio.h>
 #include<ncurses.h>
+#include<locale.h>
+#include<wchar.h>
 #include "game.h"
 
 
 int main() {
+    setlocale(LC_ALL, "");
     initscr();
     keypad(stdscr, TRUE);
     start_color();

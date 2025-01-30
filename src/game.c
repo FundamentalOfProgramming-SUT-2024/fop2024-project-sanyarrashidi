@@ -50,24 +50,10 @@ void game_ui(Player* player) {
         clrtoeol();
         move(current_y, current_x);
 
-        if (current_y == height - 1) {
-            bottom_reached = true;
-        }
-        else if (current_y == 0) {
-            top_reached = true;
-        }
-        else if (current_x == 0) {
-            left_reached = true;
-        }
-        else if (current_x == width - 1) {
-            right_reached = true;
-        }
-        else {
-            bottom_reached = false;
-            top_reached = false;
-            left_reached = false;
-            right_reached = false;
-        }
+        top_reached = (current_y == 0);
+        bottom_reached = (current_y == height - 1);
+        left_reached = (current_x == 0);
+        right_reached = (current_x == width - 1);
 
         switch (command) {
         case '8':
@@ -83,7 +69,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '6':
@@ -99,7 +85,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '2':
@@ -115,7 +101,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '4':
@@ -131,7 +117,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '7':
@@ -148,7 +134,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '9':
@@ -165,7 +151,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '3':
@@ -182,7 +168,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '1':
@@ -199,7 +185,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there!");
+                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         default:
@@ -265,25 +251,25 @@ void move_player(Player* player, int y, int x) {
     attron(A_BOLD);
     if (!strcmp(player->color, "blue")) {
         attron(COLOR_PAIR(1));
-        mvaddch(y, x, '@');
+        mvprintw(y, x, player->hero);
         attroff(COLOR_PAIR(1));
     }
     else if (!strcmp(player->color, "yellow")) {
         attron(COLOR_PAIR(3));
-        mvaddch(y, x, '@');
+        mvprintw(y, x, player->hero);
         attroff(COLOR_PAIR(3));
     }
     else if (!strcmp(player->color, "green")) {
         attron(COLOR_PAIR(2));
-        mvaddch(y, x, '@');
+        mvprintw(y, x, player->hero);
         attroff(COLOR_PAIR(2));
     }
     else if (!strcmp(player->color, "white")) {
-        mvaddch(y, x, '@');
+        mvprintw(y, x, player->hero);
     }
     else if (!strcmp(player->color, "red")) {
         attron(COLOR_PAIR(4));
-        mvaddch(y, x, '@');
+        mvprintw(y, x, player->hero);
         attroff(COLOR_PAIR(4));
     }
     attroff(A_BOLD);

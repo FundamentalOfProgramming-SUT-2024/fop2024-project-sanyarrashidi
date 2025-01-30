@@ -15,4 +15,5 @@ void settings(Player*);
 void show_settings(Player*);
 void change_difficulty(Player*);
 void change_color(Player*);
+void change_hero(Player*);
 Player* extract_players_stats(int*);

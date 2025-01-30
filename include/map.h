@@ -7,6 +7,21 @@
 
 
 typedef struct {
+    int x;
+    int y;
+    bool found;
+} Trap;
+
+
+typedef struct {
+    int x;
+    int y;
+    bool claimed;
+} Coin;
+
+
+typedef struct {
+    int total_rooms;
     int corner_x;
     int corner_y;
     int height;
@@ -20,6 +35,10 @@ typedef struct {
     int* hidden_x;
     int* hidden_y;
     char type; // 'R' for regular, 'E' for enchant, 'F' for fight, 'T' for treasure,
+    int trap_count;
+    Trap** traps;
+    int coin_count;
+    Coin** coins;
     bool visited; 
 } Room;
 

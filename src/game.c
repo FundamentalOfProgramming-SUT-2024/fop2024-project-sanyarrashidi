@@ -4,10 +4,14 @@
 void game_ui(Player* player) {
     int height, width;
     getmaxyx(stdscr, height, width);
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);
-    init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_color(10, 1000, 843, 0);
+    init_color(11, 0, 0, 1000);
+    init_color(12, 1000, 0, 0);
+    init_color(13, 0, 1000, 0);
+    init_pair(1, 11, COLOR_BLACK);
+    init_pair(2, 13, COLOR_BLACK);
+    init_pair(3, 10, COLOR_BLACK);
+    init_pair(4, 12, COLOR_BLACK);
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     Room** rooms = generate_map();
@@ -20,11 +24,15 @@ void game_ui(Player* player) {
         mvaddch(4, i, '-');
         attroff(A_UNDERLINE);
     }
+    char* new_gold = (char*) malloc(10 * sizeof(char));
     char* prev_gold = (char*) malloc(10 * sizeof(char));
+    int claimed_gold = 0;
     sprintf(prev_gold, "%d", player->gold);
     mvprintw(1, 1, "Your name: %s", player->username);
-    mvprintw(2, 1, "Gold earned: %s", prev_gold);
-    mvprintw(3, 1, "Total gold: %s", prev_gold); // should be updated in the loop
+    attron(COLOR_PAIR(3));
+    mvprintw(2, 1, "Gold earned: 0");
+    mvprintw(3, 1, "Total gold: %s", prev_gold); 
+    attroff(COLOR_PAIR(3));
     char command;
     int current_y = rooms[0]->corner_y + 1;
     int current_x = rooms[0]->corner_x + 1;
@@ -39,11 +47,14 @@ void game_ui(Player* player) {
         }
     }
 
+    Coin* found_coin = NULL;
+    bool trap_triggered = false;
     bool bottom_reached = false;
     bool top_reached = false;
     bool left_reached = false;
     bool right_reached = false;
     move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
+
     while ((command = getch()) != 'q') {
         char next_char;
         move(1, strlen(player->username) + 14);
@@ -57,12 +68,24 @@ void game_ui(Player* player) {
 
         switch (command) {
         case '8':
+            
             if (top_reached) {
                 break;
             }
             next_char = (char) mvinch(current_y - 1, current_x);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char); 
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;                   
                 current_y--;                             
                 move_player(player, current_y, current_x);
@@ -78,7 +101,18 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char);
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;
                 current_x++;
                 move_player(player, current_y, current_x);
@@ -94,7 +128,18 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y + 1, current_x);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char);
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;
                 current_y++;
                 move_player(player, current_y, current_x);
@@ -110,7 +155,18 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char);
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;
                 current_x--;
                 move_player(player, current_y, current_x);
@@ -126,7 +182,18 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y - 1, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char);
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;
                 current_y--;
                 current_x--;
@@ -143,7 +210,18 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y - 1, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char);
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;
                 current_y--;
                 current_x++;
@@ -160,7 +238,18 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y + 1, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char);
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;
                 current_y++;
                 current_x++;
@@ -177,7 +266,18 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y + 1, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
-                mvaddch(current_y, current_x, prev_char);
+                if (trap_triggered) {
+                    mvprintw(current_y, current_x, "\U0001F571");
+                    trap_triggered = false;
+                }
+                else if (found_coin && prev_char != '.') {
+                    attron(COLOR_PAIR(3));
+                    mvprintw(current_y, current_x, "\u25CC");
+                    attroff(COLOR_PAIR(3));
+                }
+                else {
+                    mvprintw(current_y, current_x, "%lc", prev_char); 
+                }
                 prev_char = next_char;
                 current_y++;
                 current_x--;
@@ -186,6 +286,38 @@ void game_ui(Player* player) {
             }
             else {
                 mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+            }
+        case 'c':
+            if (found_coin != NULL) {
+                found_coin->claimed = true;
+                mvprintw(1, width / 2 - 6, "Coin claimed!");
+                char* new_gold = (char*) malloc(10 * sizeof(char));
+                char* prev_gold = (char*) malloc(10 * sizeof(char));
+                claimed_gold += 10;
+                player->gold += 10;
+                prev_char = '.';
+                if (!strcmp(player->difficulty, "easy")) {
+                    player->score += 10;
+                }
+                else if (!strcmp(player->difficulty, "medium")) {
+                    player->score += 20;
+                }
+                else {
+                    player->score += 30;
+                }
+                new_gold[0] = '\0';
+                prev_gold[0] = '\0';
+                move(2, 0);
+                clrtoeol();
+                move(3, 0);
+                clrtoeol();
+                move(current_y, current_x);
+                sprintf(new_gold, "%d", claimed_gold);
+                sprintf(prev_gold, "%d", player->gold);
+                attron(COLOR_PAIR(3));
+                mvprintw(2, 1, "Gold earned: %s", new_gold);
+                mvprintw(3, 1, "Total gold: %s", prev_gold); 
+                attroff(COLOR_PAIR(3));
             }
             break;
         default:
@@ -242,6 +374,9 @@ void game_ui(Player* player) {
             }
         }
 
+        trap_triggered = stepped_on_trap(rooms, current_y, current_x, width);
+        found_coin = stepped_on_loot(rooms, current_y, current_x, width);
+
         refresh();
         move(current_y, current_x);
     }
@@ -291,4 +426,35 @@ bool found_hidden_door(int y, int x, int door_y, int door_x) {
     }
 
     return false;
+}
+
+
+bool stepped_on_trap(Room** rooms, int y, int x, int width) {
+    for (int i = 0; i < rooms[0]->total_rooms; i++) {
+        for (int j = 0; j < rooms[i]->trap_count; j++) {
+            if (rooms[i]->traps[j]->y == y && rooms[i]->traps[j]->x == x) {
+                if (!rooms[i]->traps[j]->found) {
+                    mvprintw(1, width / 2 - 15, "You have stepped on a trap!");
+                }
+                rooms[i]->traps[j]->found = true;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+
+Coin* stepped_on_loot(Room** rooms, int y, int x, int width) {
+    for (int i = 0; i < rooms[0]->total_rooms; i++) {
+        for (int j = 0; j < rooms[i]->coin_count; j++) {
+            if (!rooms[i]->coins[j]->claimed && rooms[i]->coins[j]->y == y && rooms[i]->coins[j]->x == x) {
+                mvprintw(1, width / 2 - 15, "Loot found! Press C to claim it.");
+                return rooms[i]->coins[j];
+            }
+        }
+    }
+
+    return NULL;
 }

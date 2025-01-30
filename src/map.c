@@ -5,10 +5,14 @@ Room** generate_map() {
     int height, width;
     getmaxyx(stdscr, height, width);
     srand(time(NULL));
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);
-    init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_color(10, 1000, 843, 0);
+    init_color(11, 0, 0, 1000);
+    init_color(12, 1000, 0, 0);
+    init_color(13, 0, 1000, 0);
+    init_pair(1, 11, COLOR_BLACK);
+    init_pair(2, 13, COLOR_BLACK);
+    init_pair(3, 10, COLOR_BLACK);
+    init_pair(4, 12, COLOR_BLACK);
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     int total_rooms = rand() % 2 + 6;
@@ -29,6 +33,7 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
     int to_enchant_room_index = rand() % (total_rooms - 3) + 1;
     while (room_counter < total_rooms) {
         Room* new_room = (Room*) malloc(sizeof(Room));
+        new_room->total_rooms = total_rooms;
         new_room->height = rand() % 9 + 6;
         new_room->width = rand() % 9 + 6;
         new_room->corner_x = rand() % (width - new_room->width - 5) + 3;
@@ -73,6 +78,31 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
             }
         }
 
+        new_room->trap_count = (new_room->height * new_room->width) / 20;
+        new_room->traps = (Trap**) calloc(new_room->trap_count, sizeof(Trap*));
+        for (int i = 0; i < new_room->trap_count; i++) {
+            new_room->traps[i] = (Trap*) malloc(sizeof(Trap));
+            new_room->traps[i]->x = new_room->corner_x + 2 + rand() % (new_room->width - 4);
+            new_room->traps[i]->y = new_room->corner_y + 2 + rand() % (new_room->height - 4);
+            new_room->traps[i]->found = false;
+        }
+
+        new_room->coin_count = (new_room->height * new_room->width) / 30;
+        new_room->coins = (Coin**) calloc(new_room->coin_count, sizeof(Coin*));
+        int coin_counter = 0;
+        while (coin_counter < new_room->coin_count) {
+            new_room->coins[coin_counter] = (Coin*) calloc(1, sizeof(Coin));
+            new_room->coins[coin_counter]->x = new_room->corner_x + 1 + rand() % (new_room->width - 2);
+            new_room->coins[coin_counter]->y = new_room->corner_y + 1 + rand() % (new_room->height - 2);
+            for (int i = 0; i < new_room->trap_count; i++) {
+                if (new_room->coins[coin_counter]->x == new_room->traps[i]->x && new_room->coins[coin_counter]->y == new_room->traps[i]->y) {
+                    continue;
+                }
+            }
+            new_room->coins[coin_counter]->claimed = false;
+            coin_counter++;
+        }
+
         new_room->visited = false;
         rooms[room_counter] = new_room;
         room_counter++;
@@ -93,6 +123,10 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
         if (i == to_enchant_room_index) {
             rooms[i]->type = 'R';
             rooms[i + 1]->type = 'E';
+            rooms[i + 1]->coin_count = 0;
+            rooms[i + 1]->trap_count = 0;
+            rooms[i + 1]->coins = NULL;
+            rooms[i + 1]->traps = NULL;
             rooms[i + 1]->door_count = 1;
             rooms[i + 1]->doors_x[1] = NULL;
             rooms[i + 1]->doors_y[1] = NULL;
@@ -191,6 +225,15 @@ void display_rooms(Room** rooms, int total_rooms) {
                 mvinch(pillar_y + 1, pillar_x) == 'O') {
                     pillar_x = rooms[i]->corner_x + 2 + rand() % (rooms[i]->width - 4);
                     pillar_y = rooms[i]->corner_y + 2 + rand() % (rooms[i]->height - 4);
+                    bool flag = false;
+                    for (int k = 0; k < rooms[i]->trap_count; k++) {
+                        if (pillar_x == rooms[i]->traps[k]->x && pillar_y == rooms[i]->traps[k]->y) {
+                            flag = true;
+                        }
+                    }
+                    if (flag) {
+                        continue;
+                    }
             }
             mvaddch(pillar_y, pillar_x, 'O');
         }
@@ -207,15 +250,15 @@ void display_single_room(Room* Room) {
     
     for (int j = 0; j < Room->height - 2; j++) {
         move(Room->corner_y + j + 1, Room->corner_x);
-        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(3));
+        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(2));
         printw("|");
-        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(3));
+        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(2));
         for (int k = 0; k < Room->width - 2; k++) {
             printw(".");
         }
-        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(3));
+        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(2));
         printw("|");
-        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(3));
+        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(2));
     }
 
     move(Room->corner_y + Room->height - 1, Room->corner_x);
@@ -237,6 +280,15 @@ void display_single_room(Room* Room) {
         attron(COLOR_PAIR(5));
         mvaddch(Room->pillars_y[j], Room->pillars_x[j], 'O');
         attroff(COLOR_PAIR(5));
+    }
+
+    for (int j = 0; j < Room->coin_count; j++) {
+        if (Room->coins[j]->claimed) {
+            continue;
+        }
+        attron(COLOR_PAIR(3));
+        mvprintw(Room->coins[j]->y, Room->coins[j]->x, "\u25CC");
+        attroff(COLOR_PAIR(3));
     }
 }
 

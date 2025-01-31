@@ -119,15 +119,15 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
             int prob = rand() % 3;
             if (prob == 0) {
                 new_room->spells[0]->type = 'H';
-                new_room->spells[0]->symbol = '\U0001F496';
+                new_room->spells[0]->symbol = L'\U0001F496';
             }
             else if (prob == 1) {
                 new_room->spells[0]->type = 'S';
-                new_room->spells[0]->symbol = '\u26A1';
+                new_room->spells[0]->symbol = L'\u26A1';
             }
             else {
                 new_room->spells[0]->type = 'D';
-                new_room->spells[0]->symbol = '\u2620';
+                new_room->spells[0]->symbol = L'\u2620';
             }
             
             new_room->spells[0]->claimed = false;
@@ -160,15 +160,15 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
                 int prob = rand() % 10 + 1;
                 if (prob <= 6) {
                     new_room->food[i]->type = 'N';
-                    new_room->food[i]->symbol = '\U0001F36B';
+                    new_room->food[i]->symbol = L'\U0001F36B';
                 }
                 else if (prob <= 9) {
                     new_room->food[i]->type = 'S';
-                    new_room->food[i]->symbol = '\U0001F35F';
+                    new_room->food[i]->symbol = L'\U0001F35F';
                 }
                 else {
                     new_room->food[i]->type = 'M';
-                    new_room->food[i]->symbol = '\U0001F354';
+                    new_room->food[i]->symbol = L'\U0001F354';
                 }
 
                 new_room->food[i]->claimed = false;
@@ -207,33 +207,33 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
             if (sword_generated) {
                 if (prob <= 5) {
                     new_room->weapons[0]->type = 'A';
-                    new_room->weapons[0]->symbol = '\U0001F3F9';
+                    new_room->weapons[0]->symbol = L'\U0001F3F9';
                 }
                 else if (prob <= 8) {
                     new_room->weapons[0]->type = 'D';
-                    new_room->weapons[0]->symbol = '\U0001F5E1';
+                    new_room->weapons[0]->symbol = L'\U0001F5E1';
                 }
                 else {
                     new_room->weapons[0]->type = 'W';
-                    new_room->weapons[0]->symbol = '\U0001FA84';
+                    new_room->weapons[0]->symbol = L'\U0001FA84';
                 }
             }
             else {
                 if (prob <= 4) {
                     new_room->weapons[0]->type = 'A';
-                    new_room->weapons[0]->symbol = '\U0001F3F9';
+                    new_room->weapons[0]->symbol = L'\U0001F3F9';
                 }
                 else if (prob <= 7) {
                     new_room->weapons[0]->type = 'D';
-                    new_room->weapons[0]->symbol = '\U0001F5E1';
+                    new_room->weapons[0]->symbol = L'\U0001F5E1';
                 }
                 else if (prob <= 9) {
                     new_room->weapons[0]->type = 'S';
-                    new_room->weapons[0]->symbol = '\u2694';
+                    new_room->weapons[0]->symbol = L'\u2694';
                 }
                 else {
                     new_room->weapons[0]->type = 'W';
-                    new_room->weapons[0]->symbol = '\U0001FA84';
+                    new_room->weapons[0]->symbol = L'\U0001FA84';
                 }
             }
 
@@ -308,15 +308,15 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
                 int prob = rand() % 3;
                 if (prob == 0) {
                     rooms[i + 1]->spells[j]->type = 'H';
-                    rooms[i + 1]->spells[j]->symbol = '\U0001F496';
+                    rooms[i + 1]->spells[j]->symbol = L'\U0001F496';
                 }
                 else if (prob == 1) {
                     rooms[i + 1]->spells[j]->type = 'S';
-                    rooms[i + 1]->spells[j]->symbol = '\u26A1';
+                    rooms[i + 1]->spells[j]->symbol = L'\u26A1';
                 }
                 else {
                     rooms[i + 1]->spells[j]->type = 'D';
-                    rooms[i + 1]->spells[j]->symbol = '\u2620';
+                    rooms[i + 1]->spells[j]->symbol = L'\u2620';
                 }
             }
             rooms[i + 1]->door_count = 1;

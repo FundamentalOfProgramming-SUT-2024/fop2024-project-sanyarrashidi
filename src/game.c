@@ -20,20 +20,34 @@ void game_ui(Player* player) {
     char** corridors = save_map();
     clear();
     display_single_room(rooms[0]);
+
+    for (int i = 1; i < 4; i++) {
+        mvprintw(i, 0, "|");
+        mvprintw(i, width - 1, "|");
+    }
+
     for (int i = 0; i < width; i++) {
         attron(A_UNDERLINE);
+        mvaddch(0, i, '-');
         mvaddch(4, i, '-');
         attroff(A_UNDERLINE);
     }
+
+    for (int i = 1; i < 4; i++) {
+        mvprintw(i, 15 + strlen(player->username), "|");
+    }
+
+    mvprintw(0, strlen(player->username) + 15 / 2 - 5, "Stats");
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "Messages");
 
     char* new_gold = (char*) malloc(10 * sizeof(char));
     char* prev_gold = (char*) malloc(10 * sizeof(char));
     int claimed_gold = 0;
     sprintf(prev_gold, "%d", player->gold);
-    mvprintw(1, 1, "Your name: %s", player->username);
+    mvprintw(1, 2, "Your name: %s", player->username);
     attron(COLOR_PAIR(3));
-    mvprintw(2, 1, "Gold earned: 0");
-    mvprintw(3, 1, "Total gold: %s", prev_gold); 
+    mvprintw(2, 2, "Gold earned: 0");
+    mvprintw(3, 2, "Total gold: %s", prev_gold); 
     attroff(COLOR_PAIR(3));
 
     Backpack* backpack = (Backpack*) malloc(sizeof(Backpack));
@@ -42,12 +56,13 @@ void game_ui(Player* player) {
     backpack->weapons[0] = (Weapon*) malloc(sizeof(Weapon));
     backpack->weapons[0]->type = 'M';
     backpack->weapons[0]->damage = 5;
-    backpack->weapons[0]->symbol = '\u2692';
+    backpack->weapons[0]->symbol = L'\u2692';
     backpack->default_weapon = backpack->weapons[0];
     backpack->spells = (Spell**) calloc(5, sizeof(Spell*));
     backpack->count_spells = 0;
     backpack->food = (Food**) calloc(5, sizeof(Food*));
     backpack->count_food = 0;
+    show_defaults(player, backpack);
 
     char command;
     int current_y = rooms[0]->corner_y + 1;
@@ -76,9 +91,11 @@ void game_ui(Player* player) {
 
     while ((command = getch()) != 'q') {
         char next_char;
-        move(1, strlen(player->username) + 14);
+        move(2, strlen(player->username) + 21);
         clrtoeol();
+        mvaddch(2, width - 1, '|');
         move(current_y, current_x);
+        show_defaults(player, backpack);
 
         top_reached = (current_y == 0);
         bottom_reached = (current_y == height - 1);
@@ -128,7 +145,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '6':
@@ -173,7 +190,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '2':
@@ -218,7 +235,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '4':
@@ -263,7 +280,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '7':
@@ -309,7 +326,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '9':
@@ -355,7 +372,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '3':
@@ -401,7 +418,7 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
             break;
         case '1':
@@ -447,12 +464,11 @@ void game_ui(Player* player) {
                 refresh();
             }
             else {
-                mvprintw(1, width / 2 - 15, "You cannot move there mate!");
+                mvprintw(2, width / 2 - 15, "You cannot move there mate!");
             }
         case 'c':
             if (found_coin != NULL) {
                 found_coin->claimed = true;
-                mvprintw(1, width / 2 - 6, "Coin claimed!");
                 char* new_gold = (char*) malloc(10 * sizeof(char));
                 char* prev_gold = (char*) malloc(10 * sizeof(char));
                 claimed_gold += 10;
@@ -469,22 +485,28 @@ void game_ui(Player* player) {
                 }
                 new_gold[0] = '\0';
                 prev_gold[0] = '\0';
-                move(2, 0);
+                move(2, 1);
                 clrtoeol();
-                move(3, 0);
+                move(3, 1);
                 clrtoeol();
+                show_defaults(player, backpack);
+                mvaddch(2, width - 1, '|');
+                mvaddch(3, width - 1, '|');
+                mvprintw(2, width / 2 - 6, "Coin claimed!");
                 move(current_y, current_x);
                 sprintf(new_gold, "%d", claimed_gold);
                 sprintf(prev_gold, "%d", player->gold);
                 attron(COLOR_PAIR(3));
-                mvprintw(2, 1, "Gold earned: %s", new_gold);
-                mvprintw(3, 1, "Total gold: %s", prev_gold); 
+                mvprintw(2, 2, "Gold earned: %s", new_gold);
+                mvprintw(3, 2, "Total gold: %s", prev_gold); 
                 attroff(COLOR_PAIR(3));
+                mvprintw(2, strlen(player->username) + 15, "|");
+                mvprintw(3, strlen(player->username) + 15, "|");
             }
 
             if (found_spell != NULL) {
                 found_spell->claimed = true;
-                mvprintw(1, width / 2 - 6, "Spell claimed!");
+                mvprintw(2, width / 2 - 6, "Spell claimed!");
                 prev_char = '.';
                 if (backpack->count_spells == 0) {
                     backpack->default_spell = found_spell;
@@ -499,15 +521,15 @@ void game_ui(Player* player) {
                 }
 
                 if (new_spell) {
+                    found_spell->amount = 1;
                     backpack->spells[backpack->count_spells] = found_spell;
-                    backpack->spells[backpack->count_spells]->amount = 1;
                     backpack->count_spells++;
                 }
             }
 
             if (found_food != NULL) {
                 found_food->claimed = true;
-                mvprintw(1, width / 2 - 6, "Food claimed!");
+                mvprintw(2, width / 2 - 6, "Food claimed!");
                 prev_char = '.';
                 if (backpack->count_food == 0) {
                     backpack->default_food = found_food;
@@ -522,15 +544,15 @@ void game_ui(Player* player) {
                 }
 
                 if (new_food) {
+                    found_food->amount = 1;
                     backpack->food[backpack->count_food] = found_food;
-                    backpack->food[backpack->count_food]->amount = 1;
                     backpack->count_food++;
                 }
             }
 
             if (found_weapon != NULL) {
                 found_weapon->claimed = true;
-                mvprintw(1, width / 2 - 6, "Weapon claimed!");
+                mvprintw(2, width / 2 - 6, "Weapon claimed!");
                 prev_char = '.';
                 
                 bool new_weapon = true;
@@ -569,11 +591,22 @@ void game_ui(Player* player) {
         case 'f':
             player->fast_paced = !player->fast_paced;
             if (player->fast_paced) {
-                mvprintw(1, strlen(player->username) + 12, "\u26A1");
+                mvprintw(1, strlen(player->username) + 13, "\u26A1");
+                mvprintw(2, width / 2 - 12, "Fast-paced mode enabled!");
             }
             else {
-                mvprintw(1, strlen(player->username) + 12, " ");
+                mvprintw(1, strlen(player->username) + 13, " ");
+                mvprintw(2, width / 2 - 12, "Fast-paced mode disabled!");
             }
+            break;
+        case 'i':
+            inventory_menu(player, backpack);
+            show_defaults(player, backpack);
+            break;
+        case 'w':
+            weapon_menu(player, backpack);
+            show_defaults(player, backpack);
+            break;
         default:
             break;
         }
@@ -584,10 +617,10 @@ void game_ui(Player* player) {
                 visited_room->visited = true;
                 display_single_room(visited_room);
                 if (visited_room->type == 'E') {
-                    mvprintw(1, width / 2 - 18, "You have discovered the enchant room!");
+                    mvprintw(2, width / 2 - 18, "You have discovered the enchant room!");
                 }
                 else {
-                    mvprintw(1, width / 2 - 15, "You have discovered a new room!");
+                    mvprintw(2, width / 2 - 15, "You have discovered a new room!");
                 }
                 move_player(player, current_y, current_x);
             }
@@ -596,7 +629,7 @@ void game_ui(Player* player) {
         if (!found_hidden && found_hidden_door(current_y, current_x, hidden_door_y, hidden_door_x)) {
             found_hidden = true;
             mvaddch(hidden_door_y, hidden_door_x, '$');
-            mvprintw(1, width / 2 - 15, "You have found a hidden door!");
+            mvprintw(2, width / 2 - 15, "You have found a hidden door!");
         }
 
         move(current_y, current_x);
@@ -691,7 +724,7 @@ bool stepped_on_trap(Room** rooms, int y, int x, int width) {
         for (int j = 0; j < rooms[i]->trap_count; j++) {
             if (rooms[i]->traps[j]->y == y && rooms[i]->traps[j]->x == x) {
                 if (!rooms[i]->traps[j]->found) {
-                    mvprintw(1, width / 2 - 15, "You have stepped on a trap!");
+                    mvprintw(2, width / 2 - 15, "You have stepped on a trap!");
                 }
                 rooms[i]->traps[j]->found = true;
                 return true;
@@ -707,7 +740,7 @@ Coin* stepped_on_loot(Room** rooms, int y, int x, int width) {
     for (int i = 0; i < rooms[0]->total_rooms; i++) {
         for (int j = 0; j < rooms[i]->coin_count; j++) {
             if (!rooms[i]->coins[j]->claimed && rooms[i]->coins[j]->y == y && rooms[i]->coins[j]->x == x) {
-                mvprintw(1, width / 2 - 15, "Loot found! Press C to claim it.");
+                mvprintw(2, width / 2 - 15, "Loot found! Press C to claim it.");
                 return rooms[i]->coins[j];
             }
         }
@@ -731,7 +764,7 @@ Spell* stepped_on_spell(Room** rooms, int y, int x, int width) {
                 else {
                     type = "Damage";
                 }
-                mvprintw(1, width / 2 - 18, "%s spell found! Press C to claim it.", type);
+                mvprintw(2, width / 2 - 18, "%s spell found! Press C to claim it.", type);
                 return rooms[i]->spells[j];
             }
         }
@@ -755,7 +788,7 @@ Food* stepped_on_food(Room** rooms, int y, int x, int width) {
                 else {
                     type = "Magic";
                 }
-                mvprintw(1, width / 2 - 15, "%s food found! Press C to claim it.", type);
+                mvprintw(2, width / 2 - 15, "%s food found! Press C to claim it.", type);
                 return rooms[i]->food[j];
             }
         }
@@ -782,11 +815,280 @@ Weapon* stepped_on_weapon(Room** rooms, int y, int x, int width) {
                 else {
                     type = "Arrow";
                 }
-                mvprintw(1, (width + strlen(type)) / 2 - 15, "%s weapon found! Press C to claim it.", type);
+                mvprintw(2, (width + strlen(type)) / 2 - 15, "%s weapon found! Press C to claim it.", type);
                 return rooms[i]->weapons[j];
             }
         }
     }
 
     return NULL;
+}
+
+
+void inventory_menu(Player* player, Backpack* backpack) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    attron(COLOR_PAIR(4));
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "INVENTORY");
+    attroff(COLOR_PAIR(4));
+    for (int i = 0; i < backpack->count_spells; i++) {
+        if (backpack->spells[i]->type == 'H') {
+            mvprintw(1, width / 2 + i * 23 - 15, "H for Health\U0001F496 (%d)", backpack->spells[i]->amount);
+        }
+        else if (backpack->spells[i]->type == 'D') {
+            mvprintw(1, width / 2 + i * 23 - 15, "D for Damage\U0001F9BE (%d)", backpack->spells[i]->amount);
+        }
+        else {
+            mvprintw(1, width / 2 + i * 23 - 15, "F for Speed\u26A1 (%d)", backpack->spells[i]->amount);
+        }
+    }
+
+    for (int i = 0; i < backpack->count_food; i++) {
+        if (backpack->food[i]->type == 'N') {
+            mvprintw(2, width / 2 + i * 23 - 15, "N for Normal\U0001F36B (%d)", backpack->food[i]->amount);
+        }
+        else if (backpack->food[i]->type == 'S') {
+            mvprintw(2, width / 2 + i * 23 - 15, "S for Special\U0001F35F (%d)", backpack->food[i]->amount);
+        }
+        else {
+            mvprintw(2, width / 2 + i * 23 - 15, "M for Magic\U0001F354 (%d)", backpack->food[i]->amount);
+        }
+    }
+
+    char command;
+    while ((command = getch()) != 'q') {
+        switch (command) {
+        case 'h':
+            for (int i = 0; i < backpack->count_spells; i++) {
+                if (backpack->spells[i]->type == 'H') {
+                    backpack->default_spell = backpack->spells[i];
+                    break;
+                }
+            }
+            break;
+        case 'd':
+            for (int i = 0; i < backpack->count_spells; i++) {
+                if (backpack->spells[i]->type == 'D') {
+                    backpack->default_spell = backpack->spells[i];
+                    break;
+                }
+            }
+            break;
+        case 'f':
+            for (int i = 0; i < backpack->count_spells; i++) {
+                if (backpack->spells[i]->type == 'S') {
+                    backpack->default_spell = backpack->spells[i];
+                    break;
+                }
+            }
+            break;
+        case 'n':
+            for (int i = 0; i < backpack->count_food; i++) {
+                if (backpack->food[i]->type == 'H') {
+                    backpack->default_food = backpack->food[i];
+                    break;
+                }
+            }
+            break;
+        case 's':
+            for (int i = 0; i < backpack->count_food; i++) {
+                if (backpack->food[i]->type == 'S') {
+                    backpack->default_food = backpack->food[i];
+                    break;
+                }
+            }
+            break;
+        case 'm':
+            for (int i = 0; i < backpack->count_food; i++) {
+                if (backpack->food[i]->type == 'M') {
+                    backpack->default_food = backpack->food[i];
+                    break;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+        show_defaults(player, backpack);
+    }
+
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "Messages"); 
+    attron(A_UNDERLINE);
+    mvaddch(0, (width - 15 + strlen(player->username)) / 2 + 14 + strlen(player->username), '-');
+    attroff(A_UNDERLINE);   
+
+    move(1, width / 2 - 15);
+    clrtoeol();
+    move(2, width / 2 - 15);
+    clrtoeol();
+    mvaddch(1, width - 1, '|');
+    mvaddch(2, width - 1, '|');
+}
+
+
+void weapon_menu(Player* player, Backpack* backpack) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    attron(COLOR_PAIR(4));
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "WEAPONS");
+    attroff(COLOR_PAIR(4));
+    attron(A_UNDERLINE);
+    printw("-");
+    attroff(A_UNDERLINE);
+    for (int i = 0; i < backpack->count_weapons; i++) {
+        if (i <= 2) {
+            if (backpack->weapons[i]->type == 'M') {
+                mvprintw(1, width / 2 + i * 25 - 15, "M for Mace\u2692");
+            }
+            else if (backpack->weapons[i]->type == 'S') {
+                mvprintw(1, width / 2 + i * 25 - 15, "S for Sword\u2694");
+            }
+            else if (backpack->weapons[i]->type == 'A') {
+                mvprintw(1, width / 2 + i * 25 - 15, "A for Arrow\U0001F3F9 (%d)", backpack->weapons[i]->ammo);
+            }
+            else if (backpack->weapons[i]->type == 'W') {
+                mvprintw(1, width / 2 + i * 25 - 15, "W for Magic wand\U0001FA84 (%d)", backpack->weapons[i]->ammo);
+            }
+            else {
+                mvprintw(1, width / 2 + i * 25 - 15, "D for Dagger\U0001F5E1 (%d)", backpack->weapons[i]->ammo);
+            }
+        }
+        else {
+            if (backpack->weapons[i]->type == 'M') {
+                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "M for Mace\u2692");
+            }
+            else if (backpack->weapons[i]->type == 'S') {
+                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "S for Sword\u2694");
+            }
+            else if (backpack->weapons[i]->type == 'A') {
+                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "A for Arrow\U0001F3F9 (%d)", backpack->weapons[i]->ammo);
+            }
+            else if (backpack->weapons[i]->type == 'W') {
+                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "W for Magic wand\U0001FA84 (%d)", backpack->weapons[i]->ammo);
+            }
+            else {
+                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "D for Dagger\U0001F5E1 (%d)", backpack->weapons[i]->ammo);
+            }
+        }
+    }
+
+    char command;
+    while ((command = getch()) != 'q') {
+        switch (command) {
+        case 'm':
+            for (int i = 0; i < backpack->count_weapons; i++) {
+                if (backpack->weapons[i]->type == 'M') {
+                    backpack->default_weapon = backpack->weapons[i];
+                    break;
+                }
+            }
+            break;
+        case 's':
+            for (int i = 0; i < backpack->count_weapons; i++) {
+                if (backpack->weapons[i]->type == 'S') {
+                    backpack->default_weapon = backpack->weapons[i];
+                    break;
+                }
+            }
+            break;
+        case 'a':
+            for (int i = 0; i < backpack->count_weapons; i++) {
+                if (backpack->weapons[i]->type == 'A') {
+                    backpack->default_weapon = backpack->weapons[i];
+                    break;
+                }
+            }
+            break;
+        case 'w':
+            for (int i = 0; i < backpack->count_weapons; i++) {
+                if (backpack->weapons[i]->type == 'W') {
+                    backpack->default_weapon = backpack->weapons[i];
+                    break;
+                }
+            }
+            break;
+        case 'd':
+            for (int i = 0; i < backpack->count_weapons; i++) {
+                if (backpack->weapons[i]->type == 'D') {
+                    backpack->default_weapon = backpack->weapons[i];
+                    break;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+        show_defaults(player, backpack);
+    }
+
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "Messages");    
+    move(1, width / 2 - 15);
+    clrtoeol();
+    move(2, width / 2 - 15);
+    clrtoeol();
+    mvaddch(1, width - 1, '|');
+    mvaddch(2, width - 1, '|');
+}
+
+
+void show_defaults(Player* player, Backpack* backpack) {
+    if (backpack->default_weapon->type == 'M') {
+        mvprintw(3, 16 + strlen(player->username), "\u2692");
+    }
+    else if (backpack->default_weapon->type == 'S') {
+        mvprintw(3, 16 + strlen(player->username), "\u2694");
+    }
+    else if (backpack->default_weapon->type == 'A') {
+        mvprintw(3, 16 + strlen(player->username), "\U0001F3F9");
+    }
+    else if (backpack->default_weapon->type == 'W') {
+        mvprintw(3, 16 + strlen(player->username), "\U0001FA84");
+    }
+    else {
+        mvprintw(3, 16 + strlen(player->username), "\U0001F5E1");
+    }
+
+    if (backpack->count_food != 0 && backpack->count_spells != 0) {
+        if (backpack->default_spell->type == 'H') {
+            mvprintw(3, 18 + strlen(player->username), "\U0001F496");
+        }
+        else if (backpack->default_spell->type == 'D') {
+            mvprintw(3, 18 + strlen(player->username), "\U0001F9BE");
+        }
+        else {
+            mvprintw(3, 18 + strlen(player->username), "\u26A1");
+        }
+
+        if (backpack->default_food->type == 'N') {
+            mvprintw(3, 20 + strlen(player->username), "\U0001F36B");
+        }
+        else if (backpack->default_food->type == 'S') {
+            mvprintw(3, 20 + strlen(player->username), "\U0001F35F");
+        }
+        else {
+            mvprintw(3, 20 + strlen(player->username), "\U0001F354");
+        }
+    }
+    else if (backpack->count_food == 0 && backpack->count_spells != 0) {
+        if (backpack->default_spell->type == 'H') {
+            mvprintw(3, 18 + strlen(player->username), "\U0001F496");
+        }
+        else if (backpack->default_spell->type == 'D') {
+            mvprintw(3, 18 + strlen(player->username), "\U0001F9BE");
+        }
+        else {
+            mvprintw(3, 18 + strlen(player->username), "\u26A1");
+        }
+    }
+    else if (backpack->count_food != 0 && backpack->count_spells == 0) {
+        if (backpack->default_food->type == 'N') {
+            mvprintw(3, 20 + strlen(player->username), "\U0001F36B");
+        }
+        else if (backpack->default_food->type == 'S') {
+            mvprintw(3, 20 + strlen(player->username), "\U0001F35F");
+        }
+        else {
+            mvprintw(3, 20 + strlen(player->username), "\U0001F354");
+        }
+    }
 }

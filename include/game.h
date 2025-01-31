@@ -30,3 +30,6 @@ Coin* stepped_on_loot(Room**, int, int, int);
 Spell* stepped_on_spell(Room**, int, int, int);
 Food* stepped_on_food(Room**, int, int, int);
 Weapon* stepped_on_weapon(Room**, int, int, int);
+void inventory_menu(Player*, Backpack*);
+void weapon_menu(Player*, Backpack*);
+void show_defaults(Player*, Backpack*);

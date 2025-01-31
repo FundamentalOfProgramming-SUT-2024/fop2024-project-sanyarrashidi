@@ -14,6 +14,7 @@ void game_ui(Player* player) {
     init_pair(4, 12, COLOR_BLACK);
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+
     Room** rooms = generate_map();
     refresh();
     char** corridors = save_map();
@@ -24,6 +25,7 @@ void game_ui(Player* player) {
         mvaddch(4, i, '-');
         attroff(A_UNDERLINE);
     }
+
     char* new_gold = (char*) malloc(10 * sizeof(char));
     char* prev_gold = (char*) malloc(10 * sizeof(char));
     int claimed_gold = 0;
@@ -33,6 +35,20 @@ void game_ui(Player* player) {
     mvprintw(2, 1, "Gold earned: 0");
     mvprintw(3, 1, "Total gold: %s", prev_gold); 
     attroff(COLOR_PAIR(3));
+
+    Backpack* backpack = (Backpack*) malloc(sizeof(Backpack));
+    backpack->count_weapons = 1;
+    backpack->weapons = (Weapon**) calloc(5, sizeof(Weapon*));
+    backpack->weapons[0] = (Weapon*) malloc(sizeof(Weapon));
+    backpack->weapons[0]->type = 'M';
+    backpack->weapons[0]->damage = 5;
+    backpack->weapons[0]->symbol = '\u2692';
+    backpack->default_weapon = backpack->weapons[0];
+    backpack->spells = (Spell**) calloc(5, sizeof(Spell*));
+    backpack->count_spells = 0;
+    backpack->food = (Food**) calloc(5, sizeof(Food*));
+    backpack->count_food = 0;
+
     char command;
     int current_y = rooms[0]->corner_y + 1;
     int current_x = rooms[0]->corner_x + 1;
@@ -48,6 +64,9 @@ void game_ui(Player* player) {
     }
 
     Coin* found_coin = NULL;
+    Spell* found_spell = NULL;
+    Food* found_food = NULL;
+    Weapon* found_weapon = NULL;
     bool trap_triggered = false;
     bool bottom_reached = false;
     bool top_reached = false;
@@ -68,12 +87,14 @@ void game_ui(Player* player) {
 
         switch (command) {
         case '8':
-            
             if (top_reached) {
                 break;
             }
             next_char = (char) mvinch(current_y - 1, current_x);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -82,6 +103,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -101,6 +137,9 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -109,6 +148,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -128,6 +182,9 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y + 1, current_x);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -136,6 +193,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -155,6 +227,9 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -163,6 +238,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -182,6 +272,9 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y - 1, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -190,6 +283,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -210,6 +318,9 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y - 1, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -218,6 +329,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -238,6 +364,9 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y + 1, current_x + 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -246,6 +375,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -266,6 +410,9 @@ void game_ui(Player* player) {
             }
             next_char = (char) mvinch(current_y + 1, current_x - 1);
             if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+                if (!player->fast_paced) {    
+                    usleep(150000);
+                }
                 if (trap_triggered) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
@@ -274,6 +421,21 @@ void game_ui(Player* player) {
                     attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "\u25CC");
                     attroff(COLOR_PAIR(3));
+                }
+                else if (found_spell && prev_char != '.') {
+                    attron(COLOR_PAIR(6));
+                    mvprintw(current_y, current_x, "\U0001F70F");
+                    attroff(COLOR_PAIR(6));
+                }
+                else if (found_food && prev_char != '.') {
+                    attron(COLOR_PAIR(4));
+                    mvprintw(current_y, current_x, "F");
+                    attroff(COLOR_PAIR(4));
+                }
+                else if (found_weapon && prev_char != '.') {
+                    attron(COLOR_PAIR(5));
+                    mvprintw(current_y, current_x, "\u2692");
+                    attroff(COLOR_PAIR(5));
                 }
                 else {
                     mvprintw(current_y, current_x, "%lc", prev_char); 
@@ -319,7 +481,99 @@ void game_ui(Player* player) {
                 mvprintw(3, 1, "Total gold: %s", prev_gold); 
                 attroff(COLOR_PAIR(3));
             }
+
+            if (found_spell != NULL) {
+                found_spell->claimed = true;
+                mvprintw(1, width / 2 - 6, "Spell claimed!");
+                prev_char = '.';
+                if (backpack->count_spells == 0) {
+                    backpack->default_spell = found_spell;
+                }
+
+                bool new_spell = true;
+                for (int i = 0; i < backpack->count_spells; i++) {
+                    if (backpack->spells[i]->type == found_spell->type) {
+                        backpack->spells[i]->amount++;
+                        new_spell = false;
+                    }
+                }
+
+                if (new_spell) {
+                    backpack->spells[backpack->count_spells] = found_spell;
+                    backpack->spells[backpack->count_spells]->amount = 1;
+                    backpack->count_spells++;
+                }
+            }
+
+            if (found_food != NULL) {
+                found_food->claimed = true;
+                mvprintw(1, width / 2 - 6, "Food claimed!");
+                prev_char = '.';
+                if (backpack->count_food == 0) {
+                    backpack->default_food = found_food;
+                }
+
+                bool new_food = true;
+                for (int i = 0; i < backpack->count_food; i++) {
+                    if (backpack->food[i]->type == found_food->type) {
+                        backpack->food[i]->amount++;
+                        new_food = false;
+                    }
+                }
+
+                if (new_food) {
+                    backpack->food[backpack->count_food] = found_food;
+                    backpack->food[backpack->count_food]->amount = 1;
+                    backpack->count_food++;
+                }
+            }
+
+            if (found_weapon != NULL) {
+                found_weapon->claimed = true;
+                mvprintw(1, width / 2 - 6, "Weapon claimed!");
+                prev_char = '.';
+                
+                bool new_weapon = true;
+                for (int i = 0; i < backpack->count_weapons; i++) {
+                    if (backpack->weapons[i]->type == found_weapon->type) {
+                        if (found_weapon->type == 'D') {
+                            backpack->weapons[i]->ammo += 10;
+                            new_weapon = false;
+                        }
+                        else if (found_weapon->type == 'W') {
+                            backpack->weapons[i]->ammo += 8;
+                            new_weapon = false;
+                        }
+                        else if (found_weapon->type == 'A') {
+                            backpack->weapons[i]->ammo += 20;
+                            new_weapon = false;
+                        }
+                    }
+                }
+
+                if (new_weapon) {
+                    backpack->weapons[backpack->count_weapons] = found_weapon;
+                    if (found_weapon->type == 'D') {
+                        backpack->weapons[backpack->count_weapons]->ammo = 10;
+                    }
+                    else if (found_weapon->type == 'W') {
+                        backpack->weapons[backpack->count_weapons]->ammo = 8;
+                    }
+                    else if (found_weapon->type == 'A') {
+                        backpack->weapons[backpack->count_weapons]->ammo = 20;
+                    }
+                    backpack->count_weapons++;
+                }
+            }
             break;
+        case 'f':
+            player->fast_paced = !player->fast_paced;
+            if (player->fast_paced) {
+                mvprintw(1, strlen(player->username) + 12, "\u26A1");
+            }
+            else {
+                mvprintw(1, strlen(player->username) + 12, " ");
+            }
         default:
             break;
         }
@@ -376,6 +630,9 @@ void game_ui(Player* player) {
 
         trap_triggered = stepped_on_trap(rooms, current_y, current_x, width);
         found_coin = stepped_on_loot(rooms, current_y, current_x, width);
+        found_spell = stepped_on_spell(rooms, current_y, current_x, width);
+        found_food = stepped_on_food(rooms, current_y, current_x, width);
+        found_weapon = stepped_on_weapon(rooms, current_y, current_x, width);
 
         refresh();
         move(current_y, current_x);
@@ -452,6 +709,81 @@ Coin* stepped_on_loot(Room** rooms, int y, int x, int width) {
             if (!rooms[i]->coins[j]->claimed && rooms[i]->coins[j]->y == y && rooms[i]->coins[j]->x == x) {
                 mvprintw(1, width / 2 - 15, "Loot found! Press C to claim it.");
                 return rooms[i]->coins[j];
+            }
+        }
+    }
+
+    return NULL;
+}
+
+
+Spell* stepped_on_spell(Room** rooms, int y, int x, int width) {
+    for (int i = 0; i < rooms[0]->total_rooms; i++) {
+        for (int j = 0; j < rooms[i]->spell_count; j++) {
+            if (!rooms[i]->spells[j]->claimed && rooms[i]->spells[j]->y == y && rooms[i]->spells[j]->x == x) {
+                char* type = (char*) malloc(10 * sizeof(char));
+                if (rooms[i]->spells[j]->type == 'H') {
+                    type = "Health";
+                }
+                else if (rooms[i]->spells[j]->type == 'S') {
+                    type = "Speed";
+                }
+                else {
+                    type = "Damage";
+                }
+                mvprintw(1, width / 2 - 18, "%s spell found! Press C to claim it.", type);
+                return rooms[i]->spells[j];
+            }
+        }
+    }
+
+    return NULL;
+}
+
+
+Food* stepped_on_food(Room** rooms, int y, int x, int width) {
+    for (int i = 0; i < rooms[0]->total_rooms; i++) {
+        for (int j = 0; j < rooms[i]->food_count; j++) {
+            if (!rooms[i]->food[j]->claimed && rooms[i]->food[j]->y == y && rooms[i]->food[j]->x == x) {
+                char* type = (char*) malloc(10 * sizeof(char));
+                if (rooms[i]->food[j]->type == 'N') {
+                    type = "Normal";
+                }
+                else if (rooms[i]->food[j]->type == 'S') {
+                    type = "Special";
+                }
+                else {
+                    type = "Magic";
+                }
+                mvprintw(1, width / 2 - 15, "%s food found! Press C to claim it.", type);
+                return rooms[i]->food[j];
+            }
+        }
+    }
+
+    return NULL;
+}
+
+
+Weapon* stepped_on_weapon(Room** rooms, int y, int x, int width) {
+    for (int i = 0; i < rooms[0]->total_rooms; i++) {
+        for (int j = 0; j < rooms[i]->weapon_count; j++) {
+            if (!rooms[i]->weapons[j]->claimed && rooms[i]->weapons[j]->y == y && rooms[i]->weapons[j]->x == x) {
+                char* type = (char*) malloc(10 * sizeof(char));
+                if (rooms[i]->weapons[j]->type == 'D') {
+                    type = "Dagger";
+                }
+                else if (rooms[i]->weapons[j]->type == 'S') {
+                    type = "Sword";
+                }
+                else if (rooms[i]->weapons[j]->type == 'W') {
+                    type = "Magic wand";
+                }
+                else {
+                    type = "Arrow";
+                }
+                mvprintw(1, (width + strlen(type)) / 2 - 15, "%s weapon found! Press C to claim it.", type);
+                return rooms[i]->weapons[j];
             }
         }
     }

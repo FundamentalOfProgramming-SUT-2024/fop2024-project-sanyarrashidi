@@ -29,6 +29,7 @@ Room** generate_map() {
 Room** generate_rooms(Room** rooms, int total_rooms) {
     int height, width;
     getmaxyx(stdscr, height, width);
+    static bool sword_generated = false;
     int room_counter = 0;
     int to_enchant_room_index = rand() % (total_rooms - 3) + 1;
     while (room_counter < total_rooms) {
@@ -92,15 +93,181 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
         int coin_counter = 0;
         while (coin_counter < new_room->coin_count) {
             new_room->coins[coin_counter] = (Coin*) calloc(1, sizeof(Coin));
-            new_room->coins[coin_counter]->x = new_room->corner_x + 1 + rand() % (new_room->width - 2);
-            new_room->coins[coin_counter]->y = new_room->corner_y + 1 + rand() % (new_room->height - 2);
-            for (int i = 0; i < new_room->trap_count; i++) {
-                if (new_room->coins[coin_counter]->x == new_room->traps[i]->x && new_room->coins[coin_counter]->y == new_room->traps[i]->y) {
-                    continue;
+            
+            bool valid_position = false;
+            while (!valid_position) {
+                new_room->coins[coin_counter]->x = new_room->corner_x + 1 + rand() % (new_room->width - 2);
+                new_room->coins[coin_counter]->y = new_room->corner_y + 1 + rand() % (new_room->height - 2);
+                valid_position = true;  
+                for (int i = 0; i < new_room->trap_count; i++) {
+                    if (new_room->coins[coin_counter]->x == new_room->traps[i]->x &&
+                        new_room->coins[coin_counter]->y == new_room->traps[i]->y) {
+                        valid_position = false; 
+                        break;
+                    }
                 }
             }
+            
             new_room->coins[coin_counter]->claimed = false;
             coin_counter++;
+        }
+
+        new_room->spell_count = rand() % 2;
+        if (new_room->spell_count) {
+            new_room->spells = (Spell**) calloc(new_room->spell_count, sizeof(Spell*));
+            new_room->spells[0] = (Spell*) malloc(sizeof(Spell));
+            int prob = rand() % 3;
+            if (prob == 0) {
+                new_room->spells[0]->type = 'H';
+                new_room->spells[0]->symbol = '\U0001F496';
+            }
+            else if (prob == 1) {
+                new_room->spells[0]->type = 'S';
+                new_room->spells[0]->symbol = '\u26A1';
+            }
+            else {
+                new_room->spells[0]->type = 'D';
+                new_room->spells[0]->symbol = '\u2620';
+            }
+            
+            new_room->spells[0]->claimed = false;
+            bool valid_position = false;
+            while (!valid_position) {
+                new_room->spells[0]->x = new_room->corner_x + 1 + rand() % (new_room->width - 2);
+                new_room->spells[0]->y = new_room->corner_y + 1 + rand() % (new_room->height - 2);
+                valid_position = true;  
+                for (int i = 0; i < new_room->trap_count; i++) {
+                    if (new_room->spells[0]->x == new_room->traps[i]->x && new_room->spells[0]->y == new_room->traps[i]->y) {
+                        valid_position = false; 
+                        break;
+                    }
+                }
+                for (int i = 0; i < new_room->coin_count; i++) {
+                    if (new_room->spells[0]->x == new_room->coins[i]->x && new_room->spells[0]->y == new_room->coins[i]->y) {
+                        valid_position = false; 
+                        break;
+                    }
+                }
+            }
+        }
+
+        new_room->food_count = rand() % 3;
+        if (new_room->food_count) {
+            new_room->food = (Food**) calloc(new_room->food_count, sizeof(Food*));
+            for (int i = 0; i < new_room->food_count; i++) {
+                new_room->food[i] = (Food*) malloc(sizeof(Food));
+                new_room->food[i]->claimed = false;
+                int prob = rand() % 10 + 1;
+                if (prob <= 6) {
+                    new_room->food[i]->type = 'N';
+                    new_room->food[i]->symbol = '\U0001F36B';
+                }
+                else if (prob <= 9) {
+                    new_room->food[i]->type = 'S';
+                    new_room->food[i]->symbol = '\U0001F35F';
+                }
+                else {
+                    new_room->food[i]->type = 'M';
+                    new_room->food[i]->symbol = '\U0001F354';
+                }
+
+                new_room->food[i]->claimed = false;
+                bool valid_position = false;
+                while (!valid_position) {
+                    new_room->food[i]->x = new_room->corner_x + 1 + rand() % (new_room->width - 2);
+                    new_room->food[i]->y = new_room->corner_y + 1 + rand() % (new_room->height - 2);
+                    valid_position = true;  
+                    for (int j = 0; j < new_room->trap_count; j++) {
+                        if (new_room->food[i]->x == new_room->traps[j]->x && new_room->food[i]->y == new_room->traps[j]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                    for (int j = 0; j < new_room->coin_count; j++) {
+                        if (new_room->food[i]->x == new_room->coins[j]->x && new_room->food[i]->y == new_room->coins[j]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                    for (int j = 0; j < new_room->spell_count; j++) {
+                        if (new_room->food[i]->x == new_room->spells[j]->x && new_room->food[i]->y == new_room->spells[j]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        new_room->weapon_count = rand() % 2;
+        if (new_room->weapon_count) {
+            new_room->weapons = (Weapon**) calloc(1, sizeof(Weapon*));
+            new_room->weapons[0] = (Weapon*) malloc(sizeof(Weapon));
+            int prob = rand() % 10 + 1;
+            if (sword_generated) {
+                if (prob <= 5) {
+                    new_room->weapons[0]->type = 'A';
+                    new_room->weapons[0]->symbol = '\U0001F3F9';
+                }
+                else if (prob <= 8) {
+                    new_room->weapons[0]->type = 'D';
+                    new_room->weapons[0]->symbol = '\U0001F5E1';
+                }
+                else {
+                    new_room->weapons[0]->type = 'W';
+                    new_room->weapons[0]->symbol = '\U0001FA84';
+                }
+            }
+            else {
+                if (prob <= 4) {
+                    new_room->weapons[0]->type = 'A';
+                    new_room->weapons[0]->symbol = '\U0001F3F9';
+                }
+                else if (prob <= 7) {
+                    new_room->weapons[0]->type = 'D';
+                    new_room->weapons[0]->symbol = '\U0001F5E1';
+                }
+                else if (prob <= 9) {
+                    new_room->weapons[0]->type = 'S';
+                    new_room->weapons[0]->symbol = '\u2694';
+                }
+                else {
+                    new_room->weapons[0]->type = 'W';
+                    new_room->weapons[0]->symbol = '\U0001FA84';
+                }
+            }
+
+            new_room->weapons[0]->claimed = false;
+            bool valid_position = false;
+            while (!valid_position) {
+                new_room->weapons[0]->x = new_room->corner_x + 1 + rand() % (new_room->width - 2);
+                new_room->weapons[0]->y = new_room->corner_y + 1 + rand() % (new_room->height - 2);
+                valid_position = true;  
+                for (int i = 0; i < new_room->trap_count; i++) {
+                    if (new_room->weapons[0]->x == new_room->traps[i]->x && new_room->weapons[0]->y == new_room->traps[i]->y) {
+                        valid_position = false; 
+                        break;
+                    }
+                }
+                for (int i = 0; i < new_room->coin_count; i++) {
+                    if (new_room->weapons[0]->x == new_room->coins[i]->x && new_room->weapons[0]->y == new_room->coins[i]->y) {
+                        valid_position = false; 
+                        break;
+                    }
+                }
+                for (int i = 0; i < new_room->spell_count; i++) {
+                    if (new_room->weapons[0]->x == new_room->spells[i]->x && new_room->weapons[0]->y == new_room->spells[i]->y) {
+                        valid_position = false; 
+                        break;
+                    }
+                }
+                for (int i = 0; i < new_room->food_count; i++) {
+                    if (new_room->weapons[0]->x == new_room->food[i]->x && new_room->weapons[0]->y == new_room->food[i]->y) {
+                        valid_position = false; 
+                        break;
+                    }
+                }
+            }
         }
 
         new_room->visited = false;
@@ -123,10 +290,35 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
         if (i == to_enchant_room_index) {
             rooms[i]->type = 'R';
             rooms[i + 1]->type = 'E';
+            rooms[i + 1]->weapon_count = 0;
             rooms[i + 1]->coin_count = 0;
             rooms[i + 1]->trap_count = 0;
+            rooms[i + 1]->food_count = 0;
+            rooms[i + 1]->weapons = NULL;
             rooms[i + 1]->coins = NULL;
             rooms[i + 1]->traps = NULL;
+            rooms[i + 1]->food = NULL;
+            rooms[i + 1]->spell_count = rooms[i + 1]->height * rooms[i + 1]->width / 8;
+            rooms[i + 1]->spells = (Spell**) calloc(rooms[i + 1]->spell_count, sizeof(Spell*));
+            for (int j = 0; j < rooms[i + 1]->spell_count; j++) {
+                rooms[i + 1]->spells[j] = (Spell*) calloc(1, sizeof(Spell));
+                rooms[i + 1]->spells[j]->x = rooms[i + 1]->corner_x + 1 + rand() % (rooms[i + 1]->width - 2);
+                rooms[i + 1]->spells[j]->y = rooms[i + 1]->corner_y + 1 + rand() % (rooms[i + 1]->height - 2);
+                rooms[i + 1]->spells[j]->claimed = false;
+                int prob = rand() % 3;
+                if (prob == 0) {
+                    rooms[i + 1]->spells[j]->type = 'H';
+                    rooms[i + 1]->spells[j]->symbol = '\U0001F496';
+                }
+                else if (prob == 1) {
+                    rooms[i + 1]->spells[j]->type = 'S';
+                    rooms[i + 1]->spells[j]->symbol = '\u26A1';
+                }
+                else {
+                    rooms[i + 1]->spells[j]->type = 'D';
+                    rooms[i + 1]->spells[j]->symbol = '\u2620';
+                }
+            }
             rooms[i + 1]->door_count = 1;
             rooms[i + 1]->doors_x[1] = NULL;
             rooms[i + 1]->doors_y[1] = NULL;
@@ -231,6 +423,26 @@ void display_rooms(Room** rooms, int total_rooms) {
                             flag = true;
                         }
                     }
+                    for (int k = 0; k < rooms[i]->coin_count; k++) {
+                        if (pillar_x == rooms[i]->coins[k]->x && pillar_y == rooms[i]->coins[k]->y) {
+                            flag = true;
+                        }
+                    }
+                    for (int k = 0; k < rooms[i]->spell_count; k++) {
+                        if (pillar_x == rooms[i]->spells[k]->x && pillar_y == rooms[i]->spells[k]->y) {
+                            flag = true;
+                        }
+                    }
+                    for (int k = 0; k < rooms[i]->food_count; k++) {
+                        if (pillar_x == rooms[i]->food[k]->x && pillar_y == rooms[i]->food[k]->y) {
+                            flag = true;
+                        }
+                    }
+                    for (int k = 0; k < rooms[i]->weapon_count; k++) {
+                        if (pillar_x == rooms[i]->weapons[k]->x && pillar_y == rooms[i]->weapons[k]->y) {
+                            flag = true;
+                        }
+                    }
                     if (flag) {
                         continue;
                     }
@@ -250,15 +462,15 @@ void display_single_room(Room* Room) {
     
     for (int j = 0; j < Room->height - 2; j++) {
         move(Room->corner_y + j + 1, Room->corner_x);
-        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(2));
+        Room->type == 'E' ? attron(COLOR_PAIR(6)) : attron(COLOR_PAIR(2));
         printw("|");
-        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(2));
+        Room->type == 'E' ? attroff(COLOR_PAIR(6)) : attroff(COLOR_PAIR(2));
         for (int k = 0; k < Room->width - 2; k++) {
             printw(".");
         }
-        Room->type == 'E' ? attron(A_UNDERLINE | COLOR_PAIR(6)) : attron(A_UNDERLINE | COLOR_PAIR(2));
+        Room->type == 'E' ? attron(COLOR_PAIR(6)) : attron(COLOR_PAIR(2));
         printw("|");
-        Room->type == 'E' ? attroff(A_UNDERLINE | COLOR_PAIR(6)) : attroff(A_UNDERLINE | COLOR_PAIR(2));
+        Room->type == 'E' ? attroff(COLOR_PAIR(6)) : attroff(COLOR_PAIR(2));
     }
 
     move(Room->corner_y + Room->height - 1, Room->corner_x);
@@ -289,6 +501,33 @@ void display_single_room(Room* Room) {
         attron(COLOR_PAIR(3));
         mvprintw(Room->coins[j]->y, Room->coins[j]->x, "\u25CC");
         attroff(COLOR_PAIR(3));
+    }
+
+    for (int j = 0; j < Room->spell_count; j++) {
+        if (Room->spells[j]->claimed) {
+            continue;
+        }
+        attron(COLOR_PAIR(6));
+        mvprintw(Room->spells[j]->y, Room->spells[j]->x, "\U0001F70F");
+        attroff(COLOR_PAIR(6));
+    }
+
+    for (int j = 0; j < Room->food_count; j++) {
+        if (Room->food[j]->claimed) {
+            continue;
+        }
+        attron(COLOR_PAIR(4));
+        mvprintw(Room->food[j]->y, Room->food[j]->x, "F");
+        attroff(COLOR_PAIR(4));
+    }
+
+    for (int j = 0; j < Room->weapon_count; j++) {
+        if (Room->weapons[j]->claimed) {
+            continue;
+        }
+        attron(COLOR_PAIR(5));
+        mvprintw(Room->weapons[j]->y, Room->weapons[j]->x, "\u2692");
+        attroff(COLOR_PAIR(5));
     }
 }
 

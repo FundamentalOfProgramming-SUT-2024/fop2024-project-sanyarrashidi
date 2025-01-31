@@ -352,6 +352,8 @@ Player* extract_players_stats(int* num_of_players) {
         player_inf = strtok(NULL, ",");
         players[*num_of_players].difficulty = strdup(player_inf);
         (*num_of_players)++;
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].fast_paced = atoi(player_inf);
     }
 
     return players;

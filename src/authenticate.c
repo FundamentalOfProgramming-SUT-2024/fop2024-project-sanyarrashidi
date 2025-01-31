@@ -104,7 +104,7 @@ Player* new_user(Player* new_player, int height, int width) {
     fprintf(data_file, "%s,%s,%s\n", new_player->username, new_player->password, new_player->email);
     fclose(data_file);
     FILE* stat_file = fopen("data/stats.csv", "a");
-    fprintf(stat_file, "%s,0,0,0,0,\u265C,white,medium,\n", new_player->username);
+    fprintf(stat_file, "%s,0,0,0,0,\u265C,white,medium,0,\n", new_player->username);
     fclose(stat_file);
     return new_player;
 }
@@ -138,7 +138,7 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
     int player_num = getch() - 48;
     while(player_num - 1 >= player_counter) {
         attron(COLOR_PAIR(2) | A_BOLD);
-        mvprintw(7, (width - 14) / 2, "Invalid digit!");
+        mvprintw(5, (width - 14) / 2, "Invalid digit!");
         refresh();
         attroff(COLOR_PAIR(2) | A_BOLD);
         player_num = getch() - 48;
@@ -153,7 +153,7 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
     while (attempts > 0) {
         if (attempts < 3) {
             attron(COLOR_PAIR(2) | A_BOLD);
-            mvprintw(7, (width - 20) / 2, "Invalid password!");
+            mvprintw(5, (width - 20) / 2, "Invalid password!");
             refresh();
             attroff(COLOR_PAIR(2) | A_BOLD);
         }
@@ -185,7 +185,7 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
 
 
 int check_username(char* username, int height, int width) {
-    move(7, 0);
+    move(5, 0);
     clrtoeol();
     refresh();
     attron(A_BOLD | COLOR_PAIR(2));
@@ -194,7 +194,7 @@ int check_username(char* username, int height, int width) {
     while (fgets(read_playar, 200, data_file)) {
         char* saved_username = strtok(read_playar, ",");
         if (!strcmp(saved_username, username)) {
-            mvprintw(7, (width - 23) / 2, "Username already taken!");
+            mvprintw(5, (width - 23) / 2, "Username already taken!");
             refresh();
             move(height / 2 - 8, 0);
             clrtoeol();
@@ -213,7 +213,7 @@ int check_pass(char* password, int height, int width) {
     clear_pass_errors();
     attron(A_BOLD | COLOR_PAIR(2));
     if (strlen(password) < 7) {
-        mvprintw(7, (width - 50) / 2, "Your password should contain at least 7 characters!");
+        mvprintw(5, (width - 50) / 2, "Your password should contain at least 7 characters!");
         refresh();
         move(height / 2 - 2, 0);
         clrtoeol();
@@ -244,15 +244,15 @@ int check_pass(char* password, int height, int width) {
     refresh();
 
     if (!upper_flag) {
-        mvprintw(6, (width - 60) / 2, "Your password should contain at least 1 uppercase character!");
+        mvprintw(4, (width - 60) / 2, "Your password should contain at least 1 uppercase character!");
         refresh();
     }
     if (!lower_flag) {
-        mvprintw(7, (width - 60) / 2, "Your password should contain at least 1 lowercase character!");
+        mvprintw(5, (width - 60) / 2, "Your password should contain at least 1 lowercase character!");
         refresh();
     }
     if (!digit_flag) {
-        mvprintw(8, (width - 46) / 2, "Your password should contain at least 1 digit!");
+        mvprintw(6, (width - 46) / 2, "Your password should contain at least 1 digit!");
         refresh();
     }
 
@@ -262,20 +262,20 @@ int check_pass(char* password, int height, int width) {
 
 
 void clear_pass_errors() {
+    move(4, 0);
+    clrtoeol();
+    refresh();
+    move(5, 0);
+    clrtoeol();
+    refresh();
     move(6, 0);
-    clrtoeol();
-    refresh();
-    move(7, 0);
-    clrtoeol();
-    refresh();
-    move(8, 0);
     clrtoeol();
     refresh();
 }
 
 
 int check_email(char* email, int height, int width) {
-    move(7, 0);
+    move(5, 0);
     clrtoeol();
     refresh();
     int atsign_index = 0, dot_index = 0;
@@ -288,7 +288,7 @@ int check_email(char* email, int height, int width) {
 
     if (!atsign_index || !dot_index || dot_index + 1 <= atsign_index || dot_index == strlen(email) - 1) {
         attron(A_BOLD | COLOR_PAIR(2));
-        mvprintw(7, (width - 24) / 2, "Email format is invalid!");
+        mvprintw(5, (width - 24) / 2, "Email format is invalid!");
         attroff(A_BOLD | COLOR_PAIR(2));
         move(height / 2 + 4, 0);
         clrtoeol();
@@ -323,5 +323,7 @@ void get_player_stat(Player* player) {
     player->color = stats;
     stats = strtok(NULL, ",");
     player->difficulty = stats;
+    stats = strtok(NULL, ",");
+    player->fast_paced = atoi(stats);
     fclose(stat_file);
 }

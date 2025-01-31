@@ -21,6 +21,37 @@ typedef struct {
 
 
 typedef struct {
+    char type; // 'M' for Mace, 'S' for Sword, 'A' for Arrow, 'W' for Magic Wand, 'D' for Dagger
+    int damage;
+    int ammo;
+    char symbol;
+    int x;
+    int y;
+    bool claimed;
+} Weapon;
+
+
+typedef struct {
+    char type; // 'H' for Health, 'S' for Speed, 'D' for Damage
+    int amount;
+    char symbol;
+    int x;
+    int y;
+    bool claimed;
+} Spell;
+
+
+typedef struct {
+    char type; // 'N' for Normal, 'S' for Special, 'M' for Magic
+    int amount;
+    char symbol;
+    int x;
+    int y;
+    bool claimed;
+} Food;
+
+
+typedef struct {
     int total_rooms;
     int corner_x;
     int corner_y;
@@ -39,6 +70,12 @@ typedef struct {
     Trap** traps;
     int coin_count;
     Coin** coins;
+    int weapon_count;
+    Weapon** weapons;
+    int spell_count;
+    Spell** spells;
+    int food_count;
+    Food** food;
     bool visited; 
 } Room;
 

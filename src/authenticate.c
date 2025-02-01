@@ -104,7 +104,7 @@ Player* new_user(Player* new_player, int height, int width) {
     fprintf(data_file, "%s,%s,%s\n", new_player->username, new_player->password, new_player->email);
     fclose(data_file);
     FILE* stat_file = fopen("data/stats.csv", "a");
-    fprintf(stat_file, "%s,0,0,0,0,\u265C,white,medium,0,\n", new_player->username);
+    fprintf(stat_file, "%s,0,0,0,0,\u265C,white,medium,0,100,5,\n", new_player->username);
     fclose(stat_file);
     return new_player;
 }
@@ -325,5 +325,9 @@ void get_player_stat(Player* player) {
     player->difficulty = stats;
     stats = strtok(NULL, ",");
     player->fast_paced = atoi(stats);
+    stats = strtok(NULL, ",");
+    player->hp = atoi(stats);
+    stats = strtok(NULL, ",");
+    player->hunger = atoi(stats);
     fclose(stat_file);
 }

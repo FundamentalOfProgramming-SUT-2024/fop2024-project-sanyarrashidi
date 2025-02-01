@@ -8,12 +8,14 @@ void game_ui(Player* player) {
     init_color(11, 0, 0, 1000);
     init_color(12, 1000, 0, 0);
     init_color(13, 0, 1000, 0);
+    init_color(14, 1000, 1000, 0);
     init_pair(1, 11, COLOR_BLACK);
     init_pair(2, 13, COLOR_BLACK);
     init_pair(3, 10, COLOR_BLACK);
     init_pair(4, 12, COLOR_BLACK);
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(7, 14, COLOR_BLACK);
 
     Room** rooms = generate_map();
     refresh();
@@ -78,6 +80,8 @@ void game_ui(Player* player) {
         }
     }
 
+    show_health_bar(player);
+    show_hunger_bar(player);
     Coin* found_coin = NULL;
     Spell* found_spell = NULL;
     Food* found_food = NULL;
@@ -89,20 +93,46 @@ void game_ui(Player* player) {
     bool right_reached = false;
     move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
 
-    while ((command = getch()) != 'q') {
+    bool game_is_running = true;
+    nodelay(stdscr, TRUE);
+    long last_hunger_update = get_current_time();
+    long last_health_update = last_hunger_update;
+    const long hunger_interval = 5 * 1000000L;
+    const long hunger_to_damage_interval = 5 * 1000000L;
+    while (game_is_running) {
+        command = getch();
         char next_char;
-        move(2, strlen(player->username) + 21);
-        clrtoeol();
-        mvaddch(2, width - 1, '|');
-        move(current_y, current_x);
-        show_defaults(player, backpack);
+
+        if (command != ERR) {
+            move(2, strlen(player->username) + 28);
+            clrtoeol();
+            mvaddch(2, width - 1, '|');
+            move(current_y, current_x);
+            show_defaults(player, backpack);
+        }
 
         top_reached = (current_y == 0);
         bottom_reached = (current_y == height - 1);
         left_reached = (current_x == 0);
         right_reached = (current_x == width - 1);
 
+        long current_time = get_current_time();
+        if (player->hunger > 0 && current_time - last_hunger_update >= hunger_interval) {
+            player->hunger--;
+            last_hunger_update = current_time;
+        }
+        show_hunger_bar(player);
+
+        if (player->hunger == 0 && current_time - last_health_update >= hunger_to_damage_interval) {
+            player->hp -= 10;
+            last_health_update = current_time;
+        }
+        show_health_bar(player);
+
         switch (command) {
+        case 'q':
+            game_is_running = false;
+            break;
         case '8':
             if (top_reached) {
                 break;
@@ -669,6 +699,7 @@ void game_ui(Player* player) {
 
         refresh();
         move(current_y, current_x);
+        usleep(10000);
     }
 }
 
@@ -884,7 +915,7 @@ void inventory_menu(Player* player, Backpack* backpack) {
             break;
         case 'n':
             for (int i = 0; i < backpack->count_food; i++) {
-                if (backpack->food[i]->type == 'H') {
+                if (backpack->food[i]->type == 'N') {
                     backpack->default_food = backpack->food[i];
                     break;
                 }
@@ -1033,62 +1064,127 @@ void weapon_menu(Player* player, Backpack* backpack) {
 
 void show_defaults(Player* player, Backpack* backpack) {
     if (backpack->default_weapon->type == 'M') {
-        mvprintw(3, 16 + strlen(player->username), "\u2692");
+        mvprintw(2, 16 + strlen(player->username), "\u2692");
     }
     else if (backpack->default_weapon->type == 'S') {
-        mvprintw(3, 16 + strlen(player->username), "\u2694");
+        mvprintw(2, 16 + strlen(player->username), "\u2694");
     }
     else if (backpack->default_weapon->type == 'A') {
-        mvprintw(3, 16 + strlen(player->username), "\U0001F3F9");
+        mvprintw(2, 16 + strlen(player->username), "\U0001F3F9");
     }
     else if (backpack->default_weapon->type == 'W') {
-        mvprintw(3, 16 + strlen(player->username), "\U0001FA84");
+        mvprintw(2, 16 + strlen(player->username), "\U0001FA84");
     }
     else {
-        mvprintw(3, 16 + strlen(player->username), "\U0001F5E1");
+        mvprintw(2, 16 + strlen(player->username), "\U0001F5E1");
     }
 
     if (backpack->count_food != 0 && backpack->count_spells != 0) {
         if (backpack->default_spell->type == 'H') {
-            mvprintw(3, 18 + strlen(player->username), "\U0001F496");
+            mvprintw(2, 18 + strlen(player->username), "\U0001F496");
         }
         else if (backpack->default_spell->type == 'D') {
-            mvprintw(3, 18 + strlen(player->username), "\U0001F9BE");
+            mvprintw(2, 18 + strlen(player->username), "\U0001F9BE");
         }
         else {
-            mvprintw(3, 18 + strlen(player->username), "\u26A1");
+            mvprintw(2, 18 + strlen(player->username), "\u26A1");
         }
 
         if (backpack->default_food->type == 'N') {
-            mvprintw(3, 20 + strlen(player->username), "\U0001F36B");
+            mvprintw(2, 20 + strlen(player->username), "\U0001F36B");
         }
         else if (backpack->default_food->type == 'S') {
-            mvprintw(3, 20 + strlen(player->username), "\U0001F35F");
+            mvprintw(2, 20 + strlen(player->username), "\U0001F35F");
         }
         else {
-            mvprintw(3, 20 + strlen(player->username), "\U0001F354");
+            mvprintw(2, 20 + strlen(player->username), "\U0001F354");
         }
     }
     else if (backpack->count_food == 0 && backpack->count_spells != 0) {
         if (backpack->default_spell->type == 'H') {
-            mvprintw(3, 18 + strlen(player->username), "\U0001F496");
+            mvprintw(2, 18 + strlen(player->username), "\U0001F496");
         }
         else if (backpack->default_spell->type == 'D') {
-            mvprintw(3, 18 + strlen(player->username), "\U0001F9BE");
+            mvprintw(2, 18 + strlen(player->username), "\U0001F9BE");
         }
         else {
-            mvprintw(3, 18 + strlen(player->username), "\u26A1");
+            mvprintw(2, 18 + strlen(player->username), "\u26A1");
         }
     }
     else if (backpack->count_food != 0 && backpack->count_spells == 0) {
         if (backpack->default_food->type == 'N') {
-            mvprintw(3, 20 + strlen(player->username), "\U0001F36B");
+            mvprintw(2, 20 + strlen(player->username), "\U0001F36B");
         }
         else if (backpack->default_food->type == 'S') {
-            mvprintw(3, 20 + strlen(player->username), "\U0001F35F");
+            mvprintw(2, 20 + strlen(player->username), "\U0001F35F");
         }
         else {
-            mvprintw(3, 20 + strlen(player->username), "\U0001F354");
+            mvprintw(2, 20 + strlen(player->username), "\U0001F354");
         }
     }
+}
+
+
+void show_health_bar(Player* player) {
+    mvprintw(1, 16 + strlen(player->username), "\u2764");
+    if (player->hp <= 30) {
+        attron(COLOR_PAIR(4));
+    }
+    else if (player->hp <= 70) {
+        attron(COLOR_PAIR(3));
+    }
+    else {
+        attron(COLOR_PAIR(2));
+    }
+    mvprintw(1, 18 + strlen(player->username), "╠");
+    for (int i = 0; i < player->hp / 10; i++) {
+        mvprintw(1, 19 + strlen(player->username) + i, "▌");
+    }
+
+    for (int i = player->hp / 10; i < 10; i++) {
+        mvprintw(1, 19 + strlen(player->username) + i, "-"); 
+    }
+
+    mvprintw(1, 29 + strlen(player->username), "╣");
+    mvprintw(1, 31 + strlen(player->username), "%d", player->hp);
+    if (player->hp != 100) {
+        mvprintw(1, 33 + strlen(player->username), " ");
+    }
+    
+    if (player->hp <= 30) {
+        attroff(COLOR_PAIR(4));
+    }
+    else if (player->hp <= 70) {
+        attroff(COLOR_PAIR(3));
+    }
+    else {
+        attroff(COLOR_PAIR(2));
+    }
+    refresh();
+}
+
+
+void show_hunger_bar(Player* player) {
+    mvprintw(3, 16 + strlen(player->username), "\U0001F357");
+    attron(COLOR_PAIR(7));
+    mvprintw(3, 18 + strlen(player->username), "╠");
+    for (int i = 0; i < player->hunger; i++) {
+        mvprintw(3, 19 + strlen(player->username) + i, "▌");
+    }
+
+    for (int i = player->hunger; i < 5; i++) {
+        mvprintw(3, 19 + strlen(player->username) + i, "-"); 
+    }
+
+    mvprintw(3, 24 + strlen(player->username), "╣");
+    mvprintw(3, 26 + strlen(player->username), "%d", player->hunger);
+    attroff(COLOR_PAIR(7));
+    refresh();
+}
+
+
+long get_current_time() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000L + tv.tv_usec;
 }

@@ -5,6 +5,7 @@
 #include<wchar.h>
 #include<time.h>
 #include<unistd.h>
+#include<sys/time.h>
 #include "map.h"
 #include "menus.h"
 
@@ -33,3 +34,6 @@ Weapon* stepped_on_weapon(Room**, int, int, int);
 void inventory_menu(Player*, Backpack*);
 void weapon_menu(Player*, Backpack*);
 void show_defaults(Player*, Backpack*);
+void show_health_bar(Player*);
+void show_hunger_bar(Player*);
+long get_current_time();

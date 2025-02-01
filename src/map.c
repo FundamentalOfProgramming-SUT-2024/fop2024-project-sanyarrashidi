@@ -208,32 +208,40 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
                 if (prob <= 5) {
                     new_room->weapons[0]->type = 'A';
                     new_room->weapons[0]->symbol = L'\U0001F3F9';
+                    new_room->weapons[0]->damage = 5;
                 }
                 else if (prob <= 8) {
                     new_room->weapons[0]->type = 'D';
                     new_room->weapons[0]->symbol = L'\U0001F5E1';
+                    new_room->weapons[0]->damage = 12;
                 }
                 else {
                     new_room->weapons[0]->type = 'W';
                     new_room->weapons[0]->symbol = L'\U0001FA84';
+                    new_room->weapons[0]->damage = 15;
                 }
             }
             else {
                 if (prob <= 4) {
                     new_room->weapons[0]->type = 'A';
                     new_room->weapons[0]->symbol = L'\U0001F3F9';
+                    new_room->weapons[0]->damage = 5;
                 }
                 else if (prob <= 7) {
                     new_room->weapons[0]->type = 'D';
                     new_room->weapons[0]->symbol = L'\U0001F5E1';
+                    new_room->weapons[0]->damage = 12;
                 }
                 else if (prob <= 9) {
                     new_room->weapons[0]->type = 'S';
                     new_room->weapons[0]->symbol = L'\u2694';
+                    new_room->weapons[0]->damage = 10;
+                    sword_generated = true;
                 }
                 else {
                     new_room->weapons[0]->type = 'W';
                     new_room->weapons[0]->symbol = L'\U0001FA84';
+                    new_room->weapons[0]->damage = 15;
                 }
             }
 

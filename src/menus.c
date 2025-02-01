@@ -199,7 +199,7 @@ void settings(Player* player) {
     refresh();
     FILE* stats_file = fopen("data/stats.csv", "w");
     for (int i = 0; i < *player_counter; i++) {
-        fprintf(stats_file, "%s,%d,%d,%d,%d,%s,%s,%s,\n", players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp, players[i].hero, players[i].color, players[i].difficulty);
+        fprintf(stats_file, "%s,%d,%d,%d,%d,%s,%s,%s,0,100,\n", players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp, players[i].hero, players[i].color, players[i].difficulty);
     }
     fclose(stats_file);
 }
@@ -351,9 +351,13 @@ Player* extract_players_stats(int* num_of_players) {
         players[*num_of_players].color = strdup(player_inf);
         player_inf = strtok(NULL, ",");
         players[*num_of_players].difficulty = strdup(player_inf);
-        (*num_of_players)++;
         player_inf = strtok(NULL, ",");
         players[*num_of_players].fast_paced = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].hp = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].hunger = atoi(player_inf);
+        (*num_of_players)++;
     }
 
     return players;

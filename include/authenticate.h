@@ -17,6 +17,8 @@ typedef struct {
     char* color;
     char* difficulty;
     int fast_paced;
+    int hp;
+    int hunger;
 } Player;
 
 

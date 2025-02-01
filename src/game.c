@@ -156,7 +156,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y - 1, current_x);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
@@ -201,7 +201,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y, current_x + 1);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
@@ -246,7 +246,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y + 1, current_x);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
@@ -291,7 +291,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y, current_x - 1);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
@@ -336,7 +336,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y - 1, current_x - 1);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
@@ -382,7 +382,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y - 1, current_x + 1);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
@@ -428,7 +428,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y + 1, current_x + 1);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
@@ -474,7 +474,7 @@ void game_ui(Player* player) {
                 break;
             }
             next_char = (char) mvinch(current_y + 1, current_x - 1);
-            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|') {
+            if (next_char != '-' && next_char != 'O' && next_char != ' ' && next_char != '|' && next_char != 'D' && next_char != 'F' && next_char != 'G' && next_char != 'S' && next_char != 'U') {
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }

@@ -52,6 +52,16 @@ typedef struct {
 
 
 typedef struct {
+    char type; // 'D' for deamon, 'F' for fire breathing, 'G' for giant, 'S' for snake, 'U' for undead
+    int x;
+    int y;
+    int hp;
+    int damage;
+    bool alive;
+} Monster;
+
+
+typedef struct {
     int total_rooms;
     int corner_x;
     int corner_y;
@@ -76,6 +86,8 @@ typedef struct {
     Spell** spells;
     int food_count;
     Food** food;
+    int monster_count;
+    Monster** monsters;
     bool visited; 
 } Room;
 
@@ -88,8 +100,8 @@ typedef struct {
 } Door;
 
 
-Room** generate_map();
-Room** generate_rooms(Room**, int);
+Room** generate_map(int, int);
+Room** generate_rooms(Room**, int, int, int);
 int check_rooms(Room**, Room*, int);
 void display_rooms(Room**, int);
 void display_single_room(Room*);

@@ -9,6 +9,7 @@ void game_ui(Player* player) {
     init_color(12, 1000, 0, 0);
     init_color(13, 0, 1000, 0);
     init_color(14, 1000, 1000, 0);
+    init_color(15, 900, 500, 0);
     init_pair(1, 11, COLOR_BLACK);
     init_pair(2, 13, COLOR_BLACK);
     init_pair(3, 10, COLOR_BLACK);
@@ -16,8 +17,19 @@ void game_ui(Player* player) {
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(7, 14, COLOR_BLACK);
-
-    Room** rooms = generate_map();
+    init_pair(8, 15, COLOR_BLACK);
+    
+    if (!strcmp(player->difficulty, "easy")) {
+        player->difficulty_coeff = 1;
+    }
+    else if (!strcmp(player->difficulty, "medium")) {
+        player->difficulty_coeff = 2;
+    }
+    else {
+        player->difficulty_coeff = 3;
+    }
+    int level = 1; 
+    Room** rooms = generate_map(player->difficulty_coeff, level);
     refresh();
     char** corridors = save_map();
     clear();
@@ -97,8 +109,8 @@ void game_ui(Player* player) {
     nodelay(stdscr, TRUE);
     long last_hunger_update = get_current_time();
     long last_health_update = last_hunger_update;
-    const long hunger_interval = 5 * 1000000L;
-    const long hunger_to_damage_interval = 5 * 1000000L;
+    const long hunger_interval = 60 * 1000000L;
+    const long hunger_to_damage_interval = 60 * 1000000L;
     while (game_is_running) {
         command = getch();
         char next_char;
@@ -129,6 +141,12 @@ void game_ui(Player* player) {
         }
         show_health_bar(player);
 
+        if (player->hp == 0) {
+            death(width);
+            game_is_running = false;
+            command = 'q';
+        }
+
         switch (command) {
         case 'q':
             game_is_running = false;
@@ -157,9 +175,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -202,9 +220,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -247,9 +265,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -292,9 +310,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -337,9 +355,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -383,9 +401,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -429,9 +447,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -475,9 +493,9 @@ void game_ui(Player* player) {
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(current_y, current_x, "F");
-                    attroff(COLOR_PAIR(4));
+                    attron(COLOR_PAIR(8));
+                    mvprintw(current_y, current_x, "@");
+                    attroff(COLOR_PAIR(8));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -986,19 +1004,19 @@ void weapon_menu(Player* player, Backpack* backpack) {
         }
         else {
             if (backpack->weapons[i]->type == 'M') {
-                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "M for Mace\u2692");
+                mvprintw(2, width / 2 + (i - 3) * 25 - 15, "M for Mace\u2692");
             }
             else if (backpack->weapons[i]->type == 'S') {
-                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "S for Sword\u2694");
+                mvprintw(2, width / 2 + (i - 3) * 25 - 15, "S for Sword\u2694");
             }
             else if (backpack->weapons[i]->type == 'A') {
-                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "A for Arrow\U0001F3F9 (%d)", backpack->weapons[i]->ammo);
+                mvprintw(2, width / 2 + (i - 3) * 25 - 15, "A for Arrow\U0001F3F9 (%d)", backpack->weapons[i]->ammo);
             }
             else if (backpack->weapons[i]->type == 'W') {
-                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "W for Magic wand\U0001FA84 (%d)", backpack->weapons[i]->ammo);
+                mvprintw(2, width / 2 + (i - 3) * 25 - 15, "W for Magic wand\U0001FA84 (%d)", backpack->weapons[i]->ammo);
             }
             else {
-                mvprintw(1, width / 2 + (i - 3) * 25 - 15, "D for Dagger\U0001F5E1 (%d)", backpack->weapons[i]->ammo);
+                mvprintw(2, width / 2 + (i - 3) * 25 - 15, "D for Dagger\U0001F5E1 (%d)", backpack->weapons[i]->ammo);
             }
         }
     }
@@ -1150,7 +1168,7 @@ void show_health_bar(Player* player) {
     if (player->hp != 100) {
         mvprintw(1, 33 + strlen(player->username), " ");
     }
-    
+
     if (player->hp <= 30) {
         attroff(COLOR_PAIR(4));
     }
@@ -1187,4 +1205,9 @@ long get_current_time() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return tv.tv_sec * 1000000L + tv.tv_usec;
+}
+
+
+void death(int width) {
+    mvprintw(2, width / 2 - 4, "You died!");
 }

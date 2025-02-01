@@ -1,7 +1,7 @@
 #include "map.h"
 
 
-Room** generate_map() {
+Room** generate_map(int difficulty, int level) {
     int height, width;
     getmaxyx(stdscr, height, width);
     srand(time(NULL));
@@ -9,15 +9,17 @@ Room** generate_map() {
     init_color(11, 0, 0, 1000);
     init_color(12, 1000, 0, 0);
     init_color(13, 0, 1000, 0);
+    init_color(14, 900, 500, 0);
     init_pair(1, 11, COLOR_BLACK);
     init_pair(2, 13, COLOR_BLACK);
     init_pair(3, 10, COLOR_BLACK);
     init_pair(4, 12, COLOR_BLACK);
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(7, 14, COLOR_BLACK);
     int total_rooms = rand() % 2 + 6;
     Room** rooms = (Room**) calloc(total_rooms, sizeof(Room*));
-    rooms = generate_rooms(rooms, total_rooms);
+    rooms = generate_rooms(rooms, total_rooms, level, difficulty);
     display_rooms(rooms, total_rooms);
     clear(); // temp
     generate_corridors(rooms, total_rooms);
@@ -26,7 +28,7 @@ Room** generate_map() {
 }
 
 
-Room** generate_rooms(Room** rooms, int total_rooms) {
+Room** generate_rooms(Room** rooms, int total_rooms, int level, int difficulty) {
     int height, width;
     getmaxyx(stdscr, height, width);
     static bool sword_generated = false;
@@ -79,7 +81,7 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
             }
         }
 
-        new_room->trap_count = (new_room->height * new_room->width) / 20;
+        new_room->trap_count = (new_room->height * new_room->width) / 30;
         new_room->traps = (Trap**) calloc(new_room->trap_count, sizeof(Trap*));
         for (int i = 0; i < new_room->trap_count; i++) {
             new_room->traps[i] = (Trap*) malloc(sizeof(Trap));
@@ -276,6 +278,153 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
                     }
                 }
             }
+
+            valid_position = true;
+            new_room->monster_count = rand() % 3 + (new_room->height * new_room->width) / 35;
+            new_room->monsters = (Monster**) calloc(new_room->monster_count, sizeof(Monster*));
+            for (int j = 0; j < new_room->monster_count; j++) {
+                new_room->monsters[j] = (Monster*) calloc(1, sizeof(Monster));
+                valid_position = false;
+                while (!valid_position) {
+                    new_room->monsters[j]->x = new_room->corner_x + 2 + rand() % (new_room->width - 4);
+                    new_room->monsters[j]->y = new_room->corner_y + 2 + rand() % (new_room->height - 4);
+                    valid_position = true;  
+                    for (int i = 0; i < new_room->trap_count; i++) {
+                        if (new_room->monsters[j]->x == new_room->traps[i]->x && new_room->monsters[j]->y == new_room->traps[i]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                    for (int i = 0; i < new_room->coin_count; i++) {
+                        if (new_room->monsters[j]->x == new_room->coins[i]->x && new_room->monsters[j]->y == new_room->coins[i]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                    for (int i = 0; i < new_room->spell_count; i++) {
+                        if (new_room->monsters[j]->x == new_room->spells[i]->x && new_room->monsters[j]->y == new_room->spells[i]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                    for (int i = 0; i < new_room->food_count; i++) {
+                        if (new_room->monsters[j]->x == new_room->food[i]->x && new_room->monsters[j]->y == new_room->food[i]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                    for (int i = 0; i < new_room->weapon_count; i++) {
+                        if (new_room->monsters[j]->x == new_room->weapons[i]->x && new_room->monsters[j]->y == new_room->weapons[i]->y) {
+                            valid_position = false; 
+                            break;
+                        }
+                    }
+                }
+
+                int prob = rand() % 10 + 1;
+                switch (level) {
+                case 1:
+                    if (prob <= 5) {
+                        new_room->monsters[j]->type = 'D';
+                        new_room->monsters[j]->damage = 3 * difficulty;
+                        new_room->monsters[j]->hp = 5;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else {
+                        new_room->monsters[j]->type = 'F';
+                        new_room->monsters[j]->damage = 5 * difficulty;
+                        new_room->monsters[j]->hp = 10;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    break;
+                case 2:
+                    if (prob <= 3) {
+                        new_room->monsters[j]->type = 'D';
+                        new_room->monsters[j]->damage = 3 * difficulty;
+                        new_room->monsters[j]->hp = 5;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else if (prob <= 7) {
+                        new_room->monsters[j]->type = 'F';
+                        new_room->monsters[j]->damage = 5 * difficulty;
+                        new_room->monsters[j]->hp = 10;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else {
+                        new_room->monsters[j]->type = 'G';
+                        new_room->monsters[j]->damage = 7 * difficulty;
+                        new_room->monsters[j]->hp = 15;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    break;
+                case 3:
+                    if (prob <= 1) {
+                        new_room->monsters[j]->type = 'D';
+                        new_room->monsters[j]->damage = 3 * difficulty;
+                        new_room->monsters[j]->hp = 5;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else if (prob <= 2) {
+                        new_room->monsters[j]->type = 'F';
+                        new_room->monsters[j]->damage = 5 * difficulty;
+                        new_room->monsters[j]->hp = 10;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else if (prob <= 5) {
+                        new_room->monsters[j]->type = 'G';
+                        new_room->monsters[j]->damage = 7 * difficulty;
+                        new_room->monsters[j]->hp = 15;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else if (prob <= 9) {
+                        new_room->monsters[j]->type = 'S';
+                        new_room->monsters[j]->damage = 10 * difficulty;
+                        new_room->monsters[j]->hp = 20;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else {
+                        new_room->monsters[j]->type = 'U';
+                        new_room->monsters[j]->damage = 15 * difficulty;
+                        new_room->monsters[j]->hp = 30;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    break;
+                case 4:
+                    if (prob <= 1) {
+                        new_room->monsters[j]->type = 'D';
+                        new_room->monsters[j]->damage = 3 * difficulty;
+                        new_room->monsters[j]->hp = 5;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else if (prob <= 2) {
+                        new_room->monsters[j]->type = 'F';
+                        new_room->monsters[j]->damage = 5 * difficulty;
+                        new_room->monsters[j]->hp = 10;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else if (prob <= 3) {
+                        new_room->monsters[j]->type = 'G';
+                        new_room->monsters[j]->damage = 7 * difficulty;
+                        new_room->monsters[j]->hp = 10;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else if (prob <= 5) {
+                        new_room->monsters[j]->type = 'S';
+                        new_room->monsters[j]->damage = 10 * difficulty;
+                        new_room->monsters[j]->hp = 20;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    else {
+                        new_room->monsters[j]->type = 'U';
+                        new_room->monsters[j]->damage = 15 * difficulty;
+                        new_room->monsters[j]->hp = 30;
+                        new_room->monsters[j]->alive = true;
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
         }
 
         new_room->visited = false;
@@ -293,6 +442,11 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
     rooms[0]->door_count = 1;
     rooms[0]->type = 'R';
     rooms[0]->visited = true;
+    if (level == 1) {
+        rooms[0]->monster_count = 0;
+        rooms[0]->monsters = NULL;
+    }
+    
 
     for (int i = 1; i < total_rooms - 1; i++) {
         if (i == to_enchant_room_index) {
@@ -302,11 +456,13 @@ Room** generate_rooms(Room** rooms, int total_rooms) {
             rooms[i + 1]->coin_count = 0;
             rooms[i + 1]->trap_count = 0;
             rooms[i + 1]->food_count = 0;
+            rooms[i + 1]->monster_count = 0;
             rooms[i + 1]->weapons = NULL;
             rooms[i + 1]->coins = NULL;
             rooms[i + 1]->traps = NULL;
             rooms[i + 1]->food = NULL;
-            rooms[i + 1]->spell_count = rooms[i + 1]->height * rooms[i + 1]->width / 8;
+            rooms[i + 1]->monsters = NULL;
+            rooms[i + 1]->spell_count = rooms[i + 1]->height * rooms[i + 1]->width / 12;
             rooms[i + 1]->spells = (Spell**) calloc(rooms[i + 1]->spell_count, sizeof(Spell*));
             for (int j = 0; j < rooms[i + 1]->spell_count; j++) {
                 rooms[i + 1]->spells[j] = (Spell*) calloc(1, sizeof(Spell));
@@ -451,6 +607,11 @@ void display_rooms(Room** rooms, int total_rooms) {
                             flag = true;
                         }
                     }
+                    for (int k = 0; k < rooms[i]->monster_count; k++) {
+                        if (pillar_x == rooms[i]->monsters[k]->x && pillar_y == rooms[i]->monsters[k]->y) {
+                            flag = true;
+                        }
+                    }
                     if (flag) {
                         continue;
                     }
@@ -524,9 +685,9 @@ void display_single_room(Room* Room) {
         if (Room->food[j]->claimed) {
             continue;
         }
-        attron(COLOR_PAIR(4));
-        mvprintw(Room->food[j]->y, Room->food[j]->x, "F");
-        attroff(COLOR_PAIR(4));
+        attron(COLOR_PAIR(7));
+        mvprintw(Room->food[j]->y, Room->food[j]->x, "@");
+        attroff(COLOR_PAIR(7));
     }
 
     for (int j = 0; j < Room->weapon_count; j++) {
@@ -536,6 +697,15 @@ void display_single_room(Room* Room) {
         attron(COLOR_PAIR(5));
         mvprintw(Room->weapons[j]->y, Room->weapons[j]->x, "\u2692");
         attroff(COLOR_PAIR(5));
+    }
+
+    for (int j = 0; j < Room->monster_count; j++) {
+        if (!Room->monsters[j]->alive) {
+            continue;
+        }
+        attron(COLOR_PAIR(4));
+        mvprintw(Room->monsters[j]->y, Room->monsters[j]->x, "%c", Room->monsters[j]->type);
+        attroff(COLOR_PAIR(4));
     }
 }
 

@@ -37,3 +37,4 @@ void show_defaults(Player*, Backpack*);
 void show_health_bar(Player*);
 void show_hunger_bar(Player*);
 long get_current_time();
+void death(int);

@@ -40,3 +40,5 @@ long get_current_time();
 void death(int);
 Room* get_current_room(Room**, int, int);
 void show_game_bar(Player*, Backpack*, int);
+bool show_pause_menu(Player*, int);
+void show_options_menu(Player*, int);

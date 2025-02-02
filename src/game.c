@@ -9,7 +9,6 @@ void game_ui(Player* player, bool new) {
     init_color(12, 1000, 0, 0);
     init_color(13, 0, 1000, 0);
     init_color(14, 1000, 1000, 0);
-    init_color(15, 900, 500, 0);
     init_pair(1, 11, COLOR_BLACK);
     init_pair(2, 13, COLOR_BLACK);
     init_pair(3, 10, COLOR_BLACK);
@@ -17,7 +16,7 @@ void game_ui(Player* player, bool new) {
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(7, 14, COLOR_BLACK);
-    init_pair(8, 15, COLOR_BLACK);
+    init_pair(8, COLOR_YELLOW, COLOR_BLACK);
     init_pair(9, COLOR_WHITE, 12);
     
     if (!strcmp(player->difficulty, "easy")) {
@@ -90,10 +89,10 @@ void game_ui(Player* player, bool new) {
 int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_corridors, char** corridors, int* claimed_gold, int level) { 
     int height, width;
     getmaxyx(stdscr, height, width);
-    if (rooms == NULL) {
-        rooms = read_rooms(player, level);
+    if (rooms == NULL && final_corridors == NULL) {
+        rooms = generate_map(player->difficulty, level);
         display_rooms(rooms, rooms[0]->total_rooms);
-        clear(); // temp
+        clear(); 
         generate_corridors(rooms, rooms[0]->total_rooms);
         save_rooms(rooms, player, level);
         refresh();
@@ -103,7 +102,13 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     clear();
     display_single_room(rooms[0]);
     show_game_bar(player, backpack, *claimed_gold);
-
+    FILE* test = fopen("test.txt", "w");
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            fprintf(test, "%c", final_corridors[i][j]);
+        }
+        fprintf(test, "\n");
+    }
     char command;
     int current_y = rooms[0]->corner_y + 1;
     int current_x = rooms[0]->corner_x + 1;
@@ -709,6 +714,17 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             weapon_menu(player, backpack);
             show_defaults(player, backpack);
             break;
+        case 27:
+            bool is_leaving = show_pause_menu(player, width);
+            if (is_leaving) {
+                char** current_corridors = save_corridors();
+                save_corridors_to_file(player, current_corridors, height, width, level, false);
+                mvprintw(2, width / 2 - 12, "Your game has been saved!");
+                refresh();
+                getch();
+                game_is_running = false;
+            }
+            show_game_bar(player, backpack, *claimed_gold);
         default:
             break;
         }
@@ -1286,6 +1302,13 @@ Room* get_current_room(Room** rooms, int y, int x) {
 
 
 void show_game_bar(Player* player, Backpack* backpack, int claimed_gold) {
+    move(1, 34 + strlen(player->username));
+    clrtoeol();
+    move(2, 34 + strlen(player->username));
+    clrtoeol();
+    move(3, 34 + strlen(player->username));
+    clrtoeol();
+
     int height, width;
     getmaxyx(stdscr, height, width);
     for (int i = 1; i < 4; i++) {
@@ -1320,4 +1343,123 @@ void show_game_bar(Player* player, Backpack* backpack, int claimed_gold) {
     show_defaults(player, backpack);  
     show_health_bar(player);
     show_hunger_bar(player); 
+}
+
+
+bool show_pause_menu(Player* player, int width) {
+    attron(A_UNDERLINE);
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "-");
+    attroff(A_UNDERLINE);
+    attron(COLOR_PAIR(4));
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 7 + strlen(player->username), "PAUSE");
+    attroff(COLOR_PAIR(4));
+    attron(A_UNDERLINE);
+    printw("-");
+    printw("-");
+    attroff(A_UNDERLINE);
+    mvprintw(1, width / 2 - 8, "Press R to resume");
+    mvprintw(2, width / 2 - 8, "Press S to save and leave");
+    mvprintw(3, width / 2 - 8, "Press O to open settings");
+
+    char command;
+    while ((command = getch()) != 'r') {
+        switch (command) {
+        case 's':
+            return true;
+            break;
+        case 'o':
+            show_options_menu(player, width);
+            break;
+        default:
+            break;
+        }
+        usleep(10000);
+    }
+
+    return false;
+}
+
+
+void show_options_menu(Player* player, int width) {
+    attron(COLOR_PAIR(4));
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "OPTIONS");
+    attroff(COLOR_PAIR(4));
+    attron(A_UNDERLINE);
+    printw("-");
+    printw("-");
+    attroff(A_UNDERLINE);
+    mvprintw(1, width / 2 - 8, "Difficulty:\tE for Easy | M for Medium | H for Hard");
+    mvprintw(2, width / 2 - 8, "Hero:      \t1.\u265F | 2.\u265E | 3.\u265D | 4.\u265C");
+    mvprintw(3, width / 2 - 8, "Hero color:\tW:\u26AA | B:\U0001F535 | R:\U0001F534 | G:\U0001F7E2 | Y:\U0001F7E1");
+
+    char command;
+    while ((command = getch()) != 'q') {
+        switch (command) {
+        case 'e':
+            player->difficulty = "easy";
+            player->difficulty_coeff = 1;
+            break;
+        case 'm':
+            player->difficulty = "medium";
+            player->difficulty_coeff = 2;
+            break;
+        case 'h':
+            player->difficulty = "hard";
+            player->difficulty_coeff = 3;
+            break;
+        case '1':
+            player->hero = "\u265F";
+            break;
+        case '2':
+            player->hero = "\u265E";
+            break;
+        case '3':
+            player->hero = "\u265D";
+            break;
+        case '4':
+            player->hero = "\u265C";
+            break;
+        case 'w':
+            player->color = "white";
+            break;
+        case 'b':
+            player->color = "blue";
+            break;
+        case 'r':
+            player->color = "red";
+            break;
+        case 'g':
+            player->color = "green";
+            break;
+        case 'y':
+            player->color = "yellow";
+            break;
+        default:
+            break;
+        }
+        usleep(10000);
+    }
+    move(1, width / 2 - 8);
+    clrtoeol();
+    move(2, width / 2 - 8);
+    clrtoeol();
+    move(3, width / 2 - 8);
+    clrtoeol();
+    mvaddch(1, width - 1, '|');
+    mvaddch(2, width - 1, '|');
+    mvaddch(3, width - 1, '|');
+    
+    attron(A_UNDERLINE);
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "-");
+    attroff(A_UNDERLINE);
+    attron(COLOR_PAIR(4));
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 7 + strlen(player->username), "PAUSE");
+    attroff(COLOR_PAIR(4));
+    attron(A_UNDERLINE);
+    printw("-");
+    printw("-");
+    attroff(A_UNDERLINE);
+    mvprintw(1, width / 2 - 8, "Press R to resume");
+    mvprintw(2, width / 2 - 8, "Press S to save and leave");
+    mvprintw(3, width / 2 - 8, "Press O to open settings");
 }

@@ -220,7 +220,7 @@ void save_corridors_to_file(Player* player, char** map, int height, int width, i
 char** read_corridors(Player* player, int height, int width, int level, bool final) {
     chdir("data");
     chdir(player->username);
-    char* name = (char*) calloc(10, sizeof(char));
+    char* name = (char*) calloc(20, sizeof(char));
     if (final) {
         sprintf(name, "final%d.txt", level);
     }
@@ -229,10 +229,11 @@ char** read_corridors(Player* player, int height, int width, int level, bool fin
     }
     FILE* data_file = fopen(name, "r");
     char** corridors = (char**) calloc(height, sizeof(char*));
-    char* read_line = (char*) calloc(width, sizeof(char));
+    char* read_line = (char*) calloc(width + 2, sizeof(char));
     for (int i = 0; i < height; i++) {
         corridors[i] = (char*) calloc(width, sizeof(char));
-        fprintf(data_file, "%s", read_line);
+        fgets(read_line, width + 2, data_file);
+        read_line[strcspn(read_line, "\n")] = '\0';
         for (int j = 0; j < width; j++) {
             corridors[i][j] = read_line[j];
         }

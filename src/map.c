@@ -9,14 +9,13 @@ Room** generate_map(int difficulty, int level) {
     init_color(11, 0, 0, 1000);
     init_color(12, 1000, 0, 0);
     init_color(13, 0, 1000, 0);
-    init_color(14, 900, 500, 0);
     init_pair(1, 11, COLOR_BLACK);
     init_pair(2, 13, COLOR_BLACK);
     init_pair(3, 10, COLOR_BLACK);
     init_pair(4, 12, COLOR_BLACK);
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
-    init_pair(7, 14, COLOR_BLACK);
+    init_pair(7, COLOR_YELLOW, COLOR_BLACK);
     int total_rooms = rand() % 2 + 6;
     Room** rooms = (Room**) calloc(total_rooms, sizeof(Room*));
     rooms = generate_rooms(rooms, total_rooms, level, difficulty);

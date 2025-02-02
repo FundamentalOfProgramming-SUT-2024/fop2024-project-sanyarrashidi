@@ -18,8 +18,8 @@ Room** generate_map(int difficulty, int level) {
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(7, 14, COLOR_BLACK);
     int total_rooms = rand() % 2 + 6;
-    Room** rooms = (Room**) calloc(total_rooms, sizeof(Room*));
-    rooms = generate_rooms(rooms, total_rooms, level, difficulty);
+    Room** rooms = read_rooms(1);
+    // rooms = generate_rooms(rooms, total_rooms, level, difficulty);
     display_rooms(rooms, total_rooms);
     clear(); // temp
     generate_corridors(rooms, total_rooms);
@@ -488,6 +488,8 @@ Room** generate_rooms(Room** rooms, int total_rooms, int level, int difficulty) 
             rooms[i + 1]->doors_y[1] = NULL;
             rooms[i + 1]->doors_x[2] = NULL;
             rooms[i + 1]->doors_y[2] = NULL;
+            rooms[i + 1]->hidden_x = NULL;
+            rooms[i + 1]->hidden_y = NULL;
             i++;
         }
         else {
@@ -495,6 +497,8 @@ Room** generate_rooms(Room** rooms, int total_rooms, int level, int difficulty) 
             rooms[i]->door_count = 2;
             rooms[i]->doors_x[2] = NULL;
             rooms[i]->doors_y[2] = NULL;
+            rooms[i]->hidden_x = NULL;
+            rooms[i]->hidden_y = NULL;
         }
     }
 

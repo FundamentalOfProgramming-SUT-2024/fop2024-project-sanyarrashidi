@@ -112,3 +112,5 @@ int is_door_available(int, int);
 void connect_doors(Door, Door);
 char** save_map();
 Room* find_room_by_door(Room**, int, int);
+void save_rooms(Room**, int);
+Room** read_rooms(int);

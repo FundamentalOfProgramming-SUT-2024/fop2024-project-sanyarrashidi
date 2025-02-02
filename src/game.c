@@ -18,6 +18,7 @@ void game_ui(Player* player) {
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(7, 14, COLOR_BLACK);
     init_pair(8, 15, COLOR_BLACK);
+    init_pair(9, COLOR_WHITE, 12);
     
     if (!strcmp(player->difficulty, "easy")) {
         player->difficulty_coeff = 1;
@@ -30,6 +31,7 @@ void game_ui(Player* player) {
     }
     int level = 1; 
     Room** rooms = generate_map(player->difficulty_coeff, level);
+    // save_rooms(rooms, level);
     refresh();
     char** corridors = save_map();
     clear();
@@ -109,8 +111,11 @@ void game_ui(Player* player) {
     nodelay(stdscr, TRUE);
     long last_hunger_update = get_current_time();
     long last_health_update = last_hunger_update;
+    long last_ench_effect_update;
     const long hunger_interval = 60 * 1000000L;
     const long hunger_to_damage_interval = 60 * 1000000L;
+    const long enchant_room_effect_interval = 5 * 1000000L;
+    Room* current_room = rooms[0];
     while (game_is_running) {
         command = getch();
         char next_char;
@@ -121,6 +126,7 @@ void game_ui(Player* player) {
             mvaddch(2, width - 1, '|');
             move(current_y, current_x);
             show_defaults(player, backpack);
+            current_room = get_current_room(rooms, current_y, current_x);
         }
 
         top_reached = (current_y == 0);
@@ -145,7 +151,19 @@ void game_ui(Player* player) {
             death(width);
             game_is_running = false;
             command = 'q';
+            getch();
         }
+
+        if (current_room != NULL && current_room->type == 'E') {
+            if (current_time - last_ench_effect_update >= enchant_room_effect_interval) {
+                player->hp -= 5;
+                last_ench_effect_update = current_time;
+            }
+            attron(COLOR_PAIR(9));
+            mvprintw(2, width / 2 - 18, "You are in enchant room! Escape soon!");
+            attroff(COLOR_PAIR(9));
+        }
+        show_health_bar(player);
 
         switch (command) {
         case 'q':
@@ -666,6 +684,7 @@ void game_ui(Player* player) {
                 display_single_room(visited_room);
                 if (visited_room->type == 'E') {
                     mvprintw(2, width / 2 - 18, "You have discovered the enchant room!");
+                    last_ench_effect_update = get_current_time();
                 }
                 else {
                     mvprintw(2, width / 2 - 15, "You have discovered a new room!");
@@ -959,6 +978,7 @@ void inventory_menu(Player* player, Backpack* backpack) {
             break;
         }
         show_defaults(player, backpack);
+        usleep(10000);
     }
 
     mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "Messages"); 
@@ -1068,6 +1088,7 @@ void weapon_menu(Player* player, Backpack* backpack) {
             break;
         }
         show_defaults(player, backpack);
+        usleep(10000);
     }
 
     mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "Messages");    
@@ -1168,6 +1189,10 @@ void show_health_bar(Player* player) {
     if (player->hp != 100) {
         mvprintw(1, 33 + strlen(player->username), " ");
     }
+    
+    if (player->hp < 10) {
+        mvprintw(1, 32 + strlen(player->username), " ");
+    }
 
     if (player->hp <= 30) {
         attroff(COLOR_PAIR(4));
@@ -1210,4 +1235,15 @@ long get_current_time() {
 
 void death(int width) {
     mvprintw(2, width / 2 - 4, "You died!");
+}
+
+
+Room* get_current_room(Room** rooms, int y, int x) {
+    for (int i = 0; i < rooms[0]->total_rooms; i++) {
+        if (x > rooms[i]->corner_x && x < rooms[i]->corner_x + rooms[i]->width - 1 && y > rooms[i]->corner_y && y < rooms[i]->corner_y + rooms[i]->height - 1) {
+            return rooms[i];
+        }
+    }
+
+    return NULL;
 }

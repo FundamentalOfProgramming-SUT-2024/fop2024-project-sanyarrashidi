@@ -6,7 +6,7 @@
 #include<time.h>
 #include<unistd.h>
 #include<sys/time.h>
-#include "map.h"
+#include "save.h"
 #include "menus.h"
 
 
@@ -38,3 +38,4 @@ void show_health_bar(Player*);
 void show_hunger_bar(Player*);
 long get_current_time();
 void death(int);
+Room* get_current_room(Room**, int, int);

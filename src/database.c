@@ -1,8 +1,12 @@
-#include "save.h"
+#include "database.h"
 
 
-void save_rooms(Room** rooms, int level) {
-    FILE* to_write_file = fopen("data/save.txt", "w");
+void save_rooms(Room** rooms, Player* player, int level) {
+    chdir("data");
+    chdir(player->username);
+    char* name = (char*) calloc(10, sizeof(char));
+    sprintf(name, "room%d.txt", level);
+    FILE* to_write_file = fopen(name, "w");
     fprintf(to_write_file, "%d\n", rooms[0]->total_rooms);
     for (int i = 0; i < rooms[0]->total_rooms; i++) {
         fprintf(to_write_file, "%d,%d,%d,%d,\n", rooms[i]->corner_x, rooms[i]->corner_y, rooms[i]->height, rooms[i]->width);
@@ -57,11 +61,17 @@ void save_rooms(Room** rooms, int level) {
     }
 
     fclose(to_write_file);
+    chdir("..");
+    chdir("..");
 }
 
 
-Room** read_rooms(int level) {
-    FILE* data_file = fopen("data/save.txt", "r");
+Room** read_rooms(Player* player, int level) {
+    chdir("data");
+    chdir(player->username);
+    char* name = (char*) calloc(10, sizeof(char));
+    sprintf(name, "room%d.txt", level);
+    FILE* data_file = fopen(name, "r");
     char* read_line = (char*) calloc(100, sizeof(char));
     fscanf(data_file, "%s", read_line);
     int total_rooms = atoi(read_line);
@@ -177,5 +187,59 @@ Room** read_rooms(int level) {
     }
 
     fclose(data_file);
+    chdir("..");
+    chdir("..");
     return rooms;
+}
+
+
+void save_corridors_to_file(Player* player, char** map, int height, int width, int level, bool final) {
+    chdir("data");
+    chdir(player->username);
+    char* name = (char*) calloc(10, sizeof(char));
+    if (final) {
+        sprintf(name, "final%d.txt", level);
+    }
+    else {
+        sprintf(name, "corridors%d.txt", level);
+    }
+    FILE* to_write_file = fopen(name, "w");
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            fprintf(to_write_file, "%c", map[i][j]);
+        }
+        fprintf(to_write_file, "\n");
+    }
+
+    fclose(to_write_file);
+    chdir("..");
+    chdir("..");
+}
+
+
+char** read_corridors(Player* player, int height, int width, int level, bool final) {
+    chdir("data");
+    chdir(player->username);
+    char* name = (char*) calloc(10, sizeof(char));
+    if (final) {
+        sprintf(name, "final%d.txt", level);
+    }
+    else {
+        sprintf(name, "corridors%d.txt", level);
+    }
+    FILE* data_file = fopen(name, "r");
+    char** corridors = (char**) calloc(height, sizeof(char*));
+    char* read_line = (char*) calloc(width, sizeof(char));
+    for (int i = 0; i < height; i++) {
+        corridors[i] = (char*) calloc(width, sizeof(char));
+        fprintf(data_file, "%s", read_line);
+        for (int j = 0; j < width; j++) {
+            corridors[i][j] = read_line[j];
+        }
+    }
+
+    fclose(data_file);
+    chdir("..");
+    chdir("..");
+    return corridors;
 }

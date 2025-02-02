@@ -110,7 +110,5 @@ void generate_corridors(Room**, int);
 void draw_corridor(Door, Door, Room**, int);
 int is_door_available(int, int);
 void connect_doors(Door, Door);
-char** save_map();
+char** save_corridors();
 Room* find_room_by_door(Room**, int, int);
-void save_rooms(Room**, int);
-Room** read_rooms(int);

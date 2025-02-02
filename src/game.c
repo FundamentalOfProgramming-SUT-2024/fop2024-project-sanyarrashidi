@@ -1,7 +1,7 @@
 #include "game.h"
 
 
-void game_ui(Player* player) {
+void game_ui(Player* player, bool new) {
     int height, width;
     getmaxyx(stdscr, height, width);
     init_color(10, 1000, 843, 0);
@@ -29,42 +29,6 @@ void game_ui(Player* player) {
     else {
         player->difficulty_coeff = 3;
     }
-    int level = 1; 
-    Room** rooms = generate_map(player->difficulty_coeff, level);
-    // save_rooms(rooms, level);
-    refresh();
-    char** corridors = save_map();
-    clear();
-    display_single_room(rooms[0]);
-
-    for (int i = 1; i < 4; i++) {
-        mvprintw(i, 0, "|");
-        mvprintw(i, width - 1, "|");
-    }
-
-    for (int i = 0; i < width; i++) {
-        attron(A_UNDERLINE);
-        mvaddch(0, i, '-');
-        mvaddch(4, i, '-');
-        attroff(A_UNDERLINE);
-    }
-
-    for (int i = 1; i < 4; i++) {
-        mvprintw(i, 15 + strlen(player->username), "|");
-    }
-
-    mvprintw(0, strlen(player->username) + 15 / 2 - 5, "Stats");
-    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "Messages");
-
-    char* new_gold = (char*) malloc(10 * sizeof(char));
-    char* prev_gold = (char*) malloc(10 * sizeof(char));
-    int claimed_gold = 0;
-    sprintf(prev_gold, "%d", player->gold);
-    mvprintw(1, 2, "Your name: %s", player->username);
-    attron(COLOR_PAIR(3));
-    mvprintw(2, 2, "Gold earned: 0");
-    mvprintw(3, 2, "Total gold: %s", prev_gold); 
-    attroff(COLOR_PAIR(3));
 
     Backpack* backpack = (Backpack*) malloc(sizeof(Backpack));
     backpack->count_weapons = 1;
@@ -78,7 +42,67 @@ void game_ui(Player* player) {
     backpack->count_spells = 0;
     backpack->food = (Food**) calloc(5, sizeof(Food*));
     backpack->count_food = 0;
-    show_defaults(player, backpack);
+
+    int level = player->current_level;
+    int claimed_gold = 0;
+
+    Room*** all_levels = (Room***) calloc(4, sizeof(Room**));
+    char*** final_corridors = (char***) calloc(4, sizeof(char**));
+    char*** corridors = (char***) calloc(4, sizeof(char**));
+    int result;
+    if (!new) {
+        for (int i = 0; i < player->unlocked_levels; i++) {
+            all_levels[i] = read_rooms(player, i + 1);
+            final_corridors[i] = read_corridors(player, height, width, i + 1, true);
+            corridors[i] = read_corridors(player, height, width, i + 1, false);
+        }
+
+        result = load_level(player, backpack, all_levels[level - 1], final_corridors[level - 1], corridors[level - 1], &claimed_gold, level);
+    }
+    else {
+        result = load_level(player, backpack, NULL, NULL, NULL, &claimed_gold, level);
+    }
+
+    while (result) {
+        if (result == -1) {
+            player->current_level--;
+            level = player->current_level;
+            result = load_level(player, backpack, all_levels[level - 1], final_corridors[level - 1], corridors[level - 1], &claimed_gold, level);
+        }
+        else {
+            player->current_level++;
+            level = player->current_level;
+            if (level > player->unlocked_levels) {
+                player->unlocked_levels++;
+                result = load_level(player, backpack, NULL, NULL, NULL, &claimed_gold, level);
+                all_levels[level - 1] = read_rooms(player, level);
+                final_corridors[level - 1] = read_corridors(player, height, width, level, true);
+                corridors[level - 1] = read_corridors(player, height, width, level, false);
+            }
+            else {
+                result = load_level(player, backpack, all_levels[level - 1], final_corridors[level - 1], corridors[level - 1], &claimed_gold, level);
+            }
+        }
+    }
+}
+
+
+int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_corridors, char** corridors, int* claimed_gold, int level) { 
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    if (rooms == NULL) {
+        rooms = read_rooms(player, level);
+        display_rooms(rooms, rooms[0]->total_rooms);
+        clear(); // temp
+        generate_corridors(rooms, rooms[0]->total_rooms);
+        save_rooms(rooms, player, level);
+        refresh();
+        final_corridors = save_corridors();
+        save_corridors_to_file(player, final_corridors, height, width, level, true);
+    }
+    clear();
+    display_single_room(rooms[0]);
+    show_game_bar(player, backpack, *claimed_gold);
 
     char command;
     int current_y = rooms[0]->corner_y + 1;
@@ -94,8 +118,6 @@ void game_ui(Player* player) {
         }
     }
 
-    show_health_bar(player);
-    show_hunger_bar(player);
     Coin* found_coin = NULL;
     Spell* found_spell = NULL;
     Food* found_food = NULL;
@@ -106,6 +128,8 @@ void game_ui(Player* player) {
     bool left_reached = false;
     bool right_reached = false;
     move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
+    player->x = rooms[0]->corner_x + 1;
+    player->y = rooms[0]->corner_y + 1;
 
     bool game_is_running = true;
     nodelay(stdscr, TRUE);
@@ -207,6 +231,7 @@ void game_ui(Player* player) {
                 }
                 prev_char = next_char;                   
                 current_y--;                             
+                player->y--;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -252,6 +277,7 @@ void game_ui(Player* player) {
                 }
                 prev_char = next_char;
                 current_x++;
+                player->x++;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -297,6 +323,7 @@ void game_ui(Player* player) {
                 }
                 prev_char = next_char;
                 current_y++;
+                player->y++;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -342,6 +369,7 @@ void game_ui(Player* player) {
                 }
                 prev_char = next_char;
                 current_x--;
+                player->x--;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -388,6 +416,8 @@ void game_ui(Player* player) {
                 prev_char = next_char;
                 current_y--;
                 current_x--;
+                player->x--;
+                player->y--;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -434,6 +464,8 @@ void game_ui(Player* player) {
                 prev_char = next_char;
                 current_y--;
                 current_x++;
+                player->x++;
+                player->y--;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -480,6 +512,8 @@ void game_ui(Player* player) {
                 prev_char = next_char;
                 current_y++;
                 current_x++;
+                player->y++;
+                player->x++;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -526,6 +560,8 @@ void game_ui(Player* player) {
                 prev_char = next_char;
                 current_y++;
                 current_x--;
+                player->y++;
+                player->x--;
                 move_player(player, current_y, current_x);
                 refresh();
             }
@@ -537,7 +573,7 @@ void game_ui(Player* player) {
                 found_coin->claimed = true;
                 char* new_gold = (char*) malloc(10 * sizeof(char));
                 char* prev_gold = (char*) malloc(10 * sizeof(char));
-                claimed_gold += 10;
+                *claimed_gold += 10;
                 player->gold += 10;
                 prev_char = '.';
                 if (!strcmp(player->difficulty, "easy")) {
@@ -560,7 +596,7 @@ void game_ui(Player* player) {
                 mvaddch(3, width - 1, '|');
                 mvprintw(2, width / 2 - 6, "Coin claimed!");
                 move(current_y, current_x);
-                sprintf(new_gold, "%d", claimed_gold);
+                sprintf(new_gold, "%d", *claimed_gold);
                 sprintf(prev_gold, "%d", player->gold);
                 attron(COLOR_PAIR(3));
                 mvprintw(2, 2, "Gold earned: %s", new_gold);
@@ -702,29 +738,29 @@ void game_ui(Player* player) {
         move(current_y, current_x);
 
         if (prev_char == '+' || prev_char == '#' || prev_char == '$') {
-            if (!right_reached && (corridors[current_y][current_x + 1] == '#' || corridors[current_y][current_x + 1] == '+')) {
-                mvaddch(current_y, current_x + 1, corridors[current_y][current_x + 1]);
+            if (!right_reached && (final_corridors[current_y][current_x + 1] == '#' || final_corridors[current_y][current_x + 1] == '+')) {
+                mvaddch(current_y, current_x + 1, final_corridors[current_y][current_x + 1]);
             }
-            if (!left_reached && (corridors[current_y][current_x - 1] == '#' || corridors[current_y][current_x - 1] == '+')) {
-                mvaddch(current_y, current_x - 1, corridors[current_y][current_x - 1]);
+            if (!left_reached && (final_corridors[current_y][current_x - 1] == '#' || final_corridors[current_y][current_x - 1] == '+')) {
+                mvaddch(current_y, current_x - 1, final_corridors[current_y][current_x - 1]);
             }
-            if (!top_reached && (corridors[current_y - 1][current_x] == '#' || corridors[current_y - 1][current_x] == '+')) {
-                mvaddch(current_y - 1, current_x, corridors[current_y - 1][current_x]);
+            if (!top_reached && (final_corridors[current_y - 1][current_x] == '#' || final_corridors[current_y - 1][current_x] == '+')) {
+                mvaddch(current_y - 1, current_x, final_corridors[current_y - 1][current_x]);
             }
-            if (!bottom_reached && (corridors[current_y + 1][current_x] == '#' || corridors[current_y + 1][current_x] == '+')) {
-                mvaddch(current_y + 1, current_x, corridors[current_y + 1][current_x]);
+            if (!bottom_reached && (final_corridors[current_y + 1][current_x] == '#' || final_corridors[current_y + 1][current_x] == '+')) {
+                mvaddch(current_y + 1, current_x, final_corridors[current_y + 1][current_x]);
             }
-            if (!left_reached && !top_reached && (corridors[current_y - 1][current_x - 1] == '#' || corridors[current_y - 1][current_x - 1] == '+')) {
-                mvaddch(current_y - 1, current_x - 1, corridors[current_y - 1][current_x - 1]);
+            if (!left_reached && !top_reached && (final_corridors[current_y - 1][current_x - 1] == '#' || final_corridors[current_y - 1][current_x - 1] == '+')) {
+                mvaddch(current_y - 1, current_x - 1, final_corridors[current_y - 1][current_x - 1]);
             }
-            if (!bottom_reached && !left_reached && (corridors[current_y + 1][current_x - 1] == '#' || corridors[current_y + 1][current_x - 1] == '+')) {
-                mvaddch(current_y + 1, current_x - 1, corridors[current_y + 1][current_x - 1]);
+            if (!bottom_reached && !left_reached && (final_corridors[current_y + 1][current_x - 1] == '#' || final_corridors[current_y + 1][current_x - 1] == '+')) {
+                mvaddch(current_y + 1, current_x - 1, final_corridors[current_y + 1][current_x - 1]);
             }
-            if (!top_reached && !right_reached && (corridors[current_y - 1][current_x + 1] == '#' || corridors[current_y - 1][current_x + 1] == '+')) {
-                mvaddch(current_y - 1, current_x + 1, corridors[current_y - 1][current_x + 1]);
+            if (!top_reached && !right_reached && (final_corridors[current_y - 1][current_x + 1] == '#' || final_corridors[current_y - 1][current_x + 1] == '+')) {
+                mvaddch(current_y - 1, current_x + 1, final_corridors[current_y - 1][current_x + 1]);
             }
-            if (!bottom_reached && !right_reached && (corridors[current_y + 1][current_x + 1] == '#' || corridors[current_y + 1][current_x + 1] == '+')) {
-                mvaddch(current_y + 1, current_x + 1, corridors[current_y + 1][current_x + 1]);
+            if (!bottom_reached && !right_reached && (final_corridors[current_y + 1][current_x + 1] == '#' || final_corridors[current_y + 1][current_x + 1] == '+')) {
+                mvaddch(current_y + 1, current_x + 1, final_corridors[current_y + 1][current_x + 1]);
             }
         }
 
@@ -1246,4 +1282,42 @@ Room* get_current_room(Room** rooms, int y, int x) {
     }
 
     return NULL;
+}
+
+
+void show_game_bar(Player* player, Backpack* backpack, int claimed_gold) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    for (int i = 1; i < 4; i++) {
+        mvprintw(i, 0, "|");
+        mvprintw(i, width - 1, "|");
+    }
+
+    for (int i = 0; i < width; i++) {
+        attron(A_UNDERLINE);
+        mvaddch(0, i, '-');
+        mvaddch(4, i, '-');
+        attroff(A_UNDERLINE);
+    }
+
+    for (int i = 1; i < 4; i++) {
+        mvprintw(i, 15 + strlen(player->username), "|");
+    }
+
+    mvprintw(0, strlen(player->username) + 15 / 2 - 5, "Stats");
+    mvprintw(0, (width - 15 + strlen(player->username)) / 2 + 6 + strlen(player->username), "Messages");
+
+    char* new_gold = (char*) malloc(10 * sizeof(char));
+    char* prev_gold = (char*) malloc(10 * sizeof(char));
+    sprintf(prev_gold, "%d", player->gold);
+    sprintf(new_gold, "%d", claimed_gold);
+    mvprintw(1, 2, "Your name: %s", player->username);
+    attron(COLOR_PAIR(3));
+    mvprintw(2, 2, "Gold earned: %s", new_gold);
+    mvprintw(3, 2, "Total gold: %s", prev_gold); 
+    attroff(COLOR_PAIR(3));
+
+    show_defaults(player, backpack);  
+    show_health_bar(player);
+    show_hunger_bar(player); 
 }

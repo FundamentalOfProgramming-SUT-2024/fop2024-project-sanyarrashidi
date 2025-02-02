@@ -17,7 +17,8 @@ int main() {
         return 0;
     }
     else if (!strcmp(player->username, ".guest")) {
-        // just new game
+        player->username = "Guest";
+        game_ui(player, true);
         return 0;
     }
     get_player_stat(player);
@@ -25,7 +26,9 @@ int main() {
     curs_set(0);
     char result = main_menu(player);
     if (result == 'n')
-        game_ui(player);
+        game_ui(player, true);
+    else if (result == 'l')
+        game_ui(player, false);
     echo();
     curs_set(1);
     endwin();

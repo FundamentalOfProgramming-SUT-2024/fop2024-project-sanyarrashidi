@@ -6,8 +6,7 @@
 #include<time.h>
 #include<unistd.h>
 #include<sys/time.h>
-#include "save.h"
-#include "menus.h"
+#include "database.h"
 
 
 typedef struct {
@@ -23,7 +22,8 @@ typedef struct {
 } Backpack;
 
 
-void game_ui(Player*);
+void game_ui(Player*, bool);
+int load_level(Player*, Backpack*, Room**, char**, char**, int*, int);
 void move_player(Player*, int, int);
 bool found_hidden_door(int, int, int, int);
 bool stepped_on_trap(Room**, int, int, int);
@@ -39,3 +39,4 @@ void show_hunger_bar(Player*);
 long get_current_time();
 void death(int);
 Room* get_current_room(Room**, int, int);
+void show_game_bar(Player*, Backpack*, int);

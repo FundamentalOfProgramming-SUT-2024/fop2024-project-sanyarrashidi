@@ -357,6 +357,14 @@ Player* extract_players_stats(int* num_of_players) {
         players[*num_of_players].hp = atoi(player_inf);
         player_inf = strtok(NULL, ",");
         players[*num_of_players].hunger = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].unlocked_levels = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].current_level = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].x = atoi(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[*num_of_players].y = atoi(player_inf);
         (*num_of_players)++;
     }
 

@@ -3,6 +3,8 @@
 #include<string.h>
 #include<ncurses.h>
 #include<ctype.h>
+#include<unistd.h>
+#include<sys/stat.h>
 
 
 typedef struct {
@@ -20,6 +22,10 @@ typedef struct {
     int fast_paced;
     int hp;
     int hunger;
+    int unlocked_levels;
+    int current_level;
+    int x;
+    int y;
 } Player;
 
 

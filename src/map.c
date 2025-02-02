@@ -18,11 +18,8 @@ Room** generate_map(int difficulty, int level) {
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(7, 14, COLOR_BLACK);
     int total_rooms = rand() % 2 + 6;
-    Room** rooms = read_rooms(1);
-    // rooms = generate_rooms(rooms, total_rooms, level, difficulty);
-    display_rooms(rooms, total_rooms);
-    clear(); // temp
-    generate_corridors(rooms, total_rooms);
+    Room** rooms = (Room**) calloc(total_rooms, sizeof(Room*));
+    rooms = generate_rooms(rooms, total_rooms, level, difficulty);
 
     return rooms;
 }
@@ -1193,14 +1190,19 @@ void connect_doors(Door start, Door end) {
 }
 
 
-char** save_map() {
+char** save_corridors() {
     int height, width;
     getmaxyx(stdscr, height, width);
     char** saved_map = (char**) calloc(height, sizeof(char*));
     for (int i = 0; i < height; i++) {
         saved_map[i] = (char*) calloc(width, sizeof(char));
         for (int j = 0; j < width; j++) {
-            saved_map[i][j] = (char) mvinch(i, j);
+            if ((char) mvinch(i, j) == '#' || (char) mvinch(i, j) == '+') {
+                saved_map[i][j] = (char) mvinch(i, j);
+            }
+            else {
+                saved_map[i][j] = ' ';
+            }
         }
     }
 

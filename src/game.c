@@ -59,6 +59,12 @@ void game_ui(Player* player, bool new) {
         result = load_level(player, backpack, all_levels[level - 1], final_corridors[level - 1], corridors[level - 1], &claimed_gold, level);
     }
     else {
+        player->gold = 0;
+        player->fast_paced = 0;
+        player->hp = 100;
+        player->hunger = 5;
+        player->unlocked_levels = 1;
+        player->current_level = 1;
         result = load_level(player, backpack, NULL, NULL, NULL, &claimed_gold, level);
     }
 
@@ -89,6 +95,7 @@ void game_ui(Player* player, bool new) {
 int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_corridors, char** corridors, int* claimed_gold, int level) { 
     int height, width;
     getmaxyx(stdscr, height, width);
+    bool new_level = false;
     if (rooms == NULL && final_corridors == NULL) {
         rooms = generate_map(player->difficulty, level);
         display_rooms(rooms, rooms[0]->total_rooms);
@@ -98,21 +105,47 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
         refresh();
         final_corridors = save_corridors();
         save_corridors_to_file(player, final_corridors, height, width, level, true);
+        new_level = true;
+        clear();
+        display_single_room(rooms[0]);
     }
-    clear();
-    display_single_room(rooms[0]);
-    show_game_bar(player, backpack, *claimed_gold);
-    FILE* test = fopen("test.txt", "w");
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            fprintf(test, "%c", final_corridors[i][j]);
+    else {
+        clear();
+        for (int i = 0; i < rooms[0]->total_rooms; i++) {
+            if (rooms[i]->visited) {
+                display_single_room(rooms[i]);
+            }
         }
-        fprintf(test, "\n");
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (corridors[i][j] == '#' || corridors[i][j] == '+') {
+                    mvprintw(i, j, "%c", corridors[i][j]);
+                }
+            }
+        }
     }
+    
     char command;
-    int current_y = rooms[0]->corner_y + 1;
-    int current_x = rooms[0]->corner_x + 1;
-    char prev_char = (char) mvinch(current_y, current_x);
+    int current_y;
+    int current_x;
+    char prev_char;
+    if (new_level) {
+        current_y = rooms[0]->corner_y + 1;
+        current_x = rooms[0]->corner_x + 1;
+        player->x = rooms[0]->corner_x + 1;
+        player->y = rooms[0]->corner_y + 1;
+        prev_char = (char) mvinch(current_y, current_x);
+        move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
+    }
+    else {
+        current_y = player->y;
+        current_x = player->x;
+        prev_char = '.';
+        move_player(player, player->y, player->x);
+    }
+    show_game_bar(player, backpack, *claimed_gold);
+
     int hidden_door_x, hidden_door_y;
     bool found_hidden = false;
     for (int i = 0; i < 8; i++) {
@@ -132,9 +165,6 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     bool top_reached = false;
     bool left_reached = false;
     bool right_reached = false;
-    move_player(player, rooms[0]->corner_y + 1, rooms[0]->corner_x + 1);
-    player->x = rooms[0]->corner_x + 1;
-    player->y = rooms[0]->corner_y + 1;
 
     bool game_is_running = true;
     nodelay(stdscr, TRUE);
@@ -222,9 +252,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -268,9 +298,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -314,9 +344,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -360,9 +390,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -406,9 +436,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -454,9 +484,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -502,9 +532,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -550,9 +580,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     attroff(COLOR_PAIR(6));
                 }
                 else if (found_food && prev_char != '.') {
-                    attron(COLOR_PAIR(8));
+                    attron(COLOR_PAIR(3));
                     mvprintw(current_y, current_x, "@");
-                    attroff(COLOR_PAIR(8));
+                    attroff(COLOR_PAIR(3));
                 }
                 else if (found_weapon && prev_char != '.') {
                     attron(COLOR_PAIR(5));
@@ -719,6 +749,8 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             if (is_leaving) {
                 char** current_corridors = save_corridors();
                 save_corridors_to_file(player, current_corridors, height, width, level, false);
+                save_player(player);
+                save_rooms(rooms, player, level);
                 mvprintw(2, width / 2 - 12, "Your game has been saved!");
                 refresh();
                 getch();
@@ -780,7 +812,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             }
         }
 
-        trap_triggered = stepped_on_trap(rooms, current_y, current_x, width);
+        trap_triggered = stepped_on_trap(rooms, player, current_y, current_x, width);
         found_coin = stepped_on_loot(rooms, current_y, current_x, width);
         found_spell = stepped_on_spell(rooms, current_y, current_x, width);
         found_food = stepped_on_food(rooms, current_y, current_x, width);
@@ -839,11 +871,13 @@ bool found_hidden_door(int y, int x, int door_y, int door_x) {
 }
 
 
-bool stepped_on_trap(Room** rooms, int y, int x, int width) {
+bool stepped_on_trap(Room** rooms, Player* player, int y, int x, int width) {
     for (int i = 0; i < rooms[0]->total_rooms; i++) {
         for (int j = 0; j < rooms[i]->trap_count; j++) {
             if (rooms[i]->traps[j]->y == y && rooms[i]->traps[j]->x == x) {
                 if (!rooms[i]->traps[j]->found) {
+                    player->hp -= 5;
+                    show_health_bar(player);
                     mvprintw(2, width / 2 - 15, "You have stepped on a trap!");
                 }
                 rooms[i]->traps[j]->found = true;
@@ -1293,6 +1327,7 @@ void death(int width) {
 Room* get_current_room(Room** rooms, int y, int x) {
     for (int i = 0; i < rooms[0]->total_rooms; i++) {
         if (x > rooms[i]->corner_x && x < rooms[i]->corner_x + rooms[i]->width - 1 && y > rooms[i]->corner_y && y < rooms[i]->corner_y + rooms[i]->height - 1) {
+            rooms[i]->visited = true;
             return rooms[i];
         }
     }
@@ -1340,6 +1375,9 @@ void show_game_bar(Player* player, Backpack* backpack, int claimed_gold) {
     mvprintw(3, 2, "Total gold: %s", prev_gold); 
     attroff(COLOR_PAIR(3));
 
+    if (player->fast_paced) {
+        mvprintw(1, strlen(player->username) + 13, "\u26A1");
+    }
     show_defaults(player, backpack);  
     show_health_bar(player);
     show_hunger_bar(player); 
@@ -1409,30 +1447,47 @@ void show_options_menu(Player* player, int width) {
             break;
         case '1':
             player->hero = "\u265F";
+            mvprintw(player->y, player->x, "%s", player->hero);
             break;
         case '2':
             player->hero = "\u265E";
+            mvprintw(player->y, player->x, "%s", player->hero);
             break;
         case '3':
             player->hero = "\u265D";
+            mvprintw(player->y, player->x, "%s", player->hero);
             break;
         case '4':
             player->hero = "\u265C";
+            mvprintw(player->y, player->x, "%s", player->hero);
             break;
         case 'w':
             player->color = "white";
+            mvprintw(player->y, player->x, "%s", player->hero);
             break;
         case 'b':
             player->color = "blue";
+            attron(COLOR_PAIR(1));
+            mvprintw(player->y, player->x, "%s", player->hero);
+            attroff(COLOR_PAIR(1));
             break;
         case 'r':
             player->color = "red";
+            attron(COLOR_PAIR(4));
+            mvprintw(player->y, player->x, "%s", player->hero);
+            attroff(COLOR_PAIR(4));
             break;
         case 'g':
             player->color = "green";
+            attron(COLOR_PAIR(2));
+            mvprintw(player->y, player->x, "%s", player->hero);
+            attroff(COLOR_PAIR(2));
             break;
         case 'y':
             player->color = "yellow";
+            attron(COLOR_PAIR(3));
+            mvprintw(player->y, player->x, "%s", player->hero);
+            attroff(COLOR_PAIR(3));
             break;
         default:
             break;

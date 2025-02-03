@@ -244,3 +244,47 @@ char** read_corridors(Player* player, int height, int width, int level, bool fin
     chdir("..");
     return corridors;
 }
+
+
+void save_player(Player* player) {
+    int num_players = 0;
+    Player* players = extract_players_stats(&num_players);
+    FILE* to_write_file = fopen("data/stats.csv", "w");
+    for (int i = 0; i < num_players; i++) {
+        if (!strcmp(players[i].username, player->username)) {
+            players[i].score = player->score;
+            players[i].gold = player->gold;
+            players[i].finished = player->finished;
+            players[i].hero = player->hero;
+            players[i].color = player->color;
+            players[i].difficulty = player->difficulty;
+            players[i].fast_paced = player->fast_paced;
+            players[i].hp = player->hp;
+            players[i].hunger = player->hunger;
+            players[i].unlocked_levels = player->unlocked_levels;
+            players[i].current_level = player->current_level;
+            players[i].x = player->x;
+            players[i].y = player->y;
+        }
+
+        fprintf(to_write_file, "%s,%d,%d,%d,%d,%s,%s,%s,%d,%d,%d,%d,%d,%d,%d,\n", 
+            players[i].username,
+            players[i].score,
+            players[i].gold,
+            players[i].finished,
+            players[i].exp,
+            players[i].hero,
+            players[i].color,
+            players[i].difficulty,
+            players[i].fast_paced,
+            players[i].hp,
+            players[i].hunger,
+            players[i].unlocked_levels,
+            players[i].current_level,
+            players[i].x,
+            players[i].y);
+        
+    }
+
+    fclose(to_write_file);
+}

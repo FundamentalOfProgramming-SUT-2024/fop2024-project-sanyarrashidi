@@ -26,7 +26,7 @@ void game_ui(Player*, bool);
 int load_level(Player*, Backpack*, Room**, char**, char**, int*, int);
 void move_player(Player*, int, int);
 bool found_hidden_door(int, int, int, int);
-bool stepped_on_trap(Room**, int, int, int);
+bool stepped_on_trap(Room**, Player*, int, int, int);
 Coin* stepped_on_loot(Room**, int, int, int);
 Spell* stepped_on_spell(Room**, int, int, int);
 Food* stepped_on_food(Room**, int, int, int);

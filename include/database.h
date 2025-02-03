@@ -11,3 +11,4 @@ void save_rooms(Room**, Player*, int);
 Room** read_rooms(Player*, int);
 void save_corridors_to_file(Player*, char**, int, int, int, bool);
 char** read_corridors(Player*, int, int, int, bool);
+void save_player(Player*);

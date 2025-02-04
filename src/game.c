@@ -169,15 +169,25 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     bool top_reached = false;
     bool left_reached = false;
     bool right_reached = false;
+    bool health_spell_used = false;
+    bool speed_spell_used = false;
+    bool damage_spell_used = false;
+    bool special_food_used = false;
+    bool magic_food_used = false;
 
     bool game_is_running = true;
     nodelay(stdscr, TRUE);
     long last_hunger_update = get_current_time();
     long last_health_update = last_hunger_update;
     long last_ench_effect_update;
+    long last_spell_effect_update = 0;
+    long last_food_effect_update = 0;
     const long hunger_interval = 60 * 1000000L;
     const long hunger_to_damage_interval = 60 * 1000000L;
+    const long recover_health_interval = 5 * 1000000L;
     const long enchant_room_effect_interval = 5 * 1000000L;
+    const long spell_effect_interval = 10 * 1000000L;
+    const long food_effect_interval = 10 * 1000000L;
     Room* current_room = rooms[0];
     while (game_is_running) {
         command = getch();
@@ -208,7 +218,25 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             player->hp -= 10;
             last_health_update = current_time;
         }
+        if (player->hunger == 5 && player->hp != 100 && current_time - last_health_update >= recover_health_interval) {
+            player->hp += 5 * (health_spell_used ? 2 : 1);
+            last_health_update = current_time;
+        }
         show_health_bar(player);
+
+        if (health_spell_used && current_time - last_spell_effect_update >= spell_effect_interval) {
+            health_spell_used = false;
+        }
+
+        if (speed_spell_used && current_time - last_spell_effect_update >= spell_effect_interval) {
+            player->fast_paced = 0;
+            speed_spell_used = false;
+        }
+
+        if (magic_food_used && current_time - last_food_effect_update >= food_effect_interval) {
+            player->fast_paced = 0;
+            magic_food_used = false;
+        }
 
         if (player->hp == 0) {
             death(width);
@@ -747,6 +775,56 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
         case 'w':
             weapon_menu(player, backpack);
             show_defaults(player, backpack);
+            break;
+        case 's':
+            if (backpack->default_spell != NULL && !health_spell_used && !speed_spell_used && !damage_spell_used && backpack->default_spell->amount > 0) {
+                if (backpack->default_spell->type == 'H') {
+                    health_spell_used = true;
+                    mvprintw(2, width / 2 - 9, "Health spell used!");
+                }
+                else if (backpack->default_spell->type == 'S') {
+                    speed_spell_used = true;
+                    player->fast_paced = 1;
+                    mvprintw(2, width / 2 - 8, "Speed spell used!");
+                }
+                else {
+                    damage_spell_used = true;
+                    mvprintw(2, width / 2 - 9, "Damage spell used!");
+                    // needs work
+                }
+                backpack->default_spell->amount--;
+                last_spell_effect_update = get_current_time();
+            }
+            break;
+        case 'e':
+            if (backpack->default_food != NULL && !special_food_used && !magic_food_used && backpack->default_food->amount > 0) {
+                if (backpack->default_food->type == 'N') {
+                    int expired_prob = rand() % 4;
+                    if (expired_prob == 0) {
+                        player->hp -= 20;
+                        show_health_bar(player);
+                        mvprintw(2, width / 2 - 6, "Expired Food!");
+                    }
+                    else {
+                        mvprintw(2, width / 2 - 8, "Normal food used!");
+                        player->hunger = 5;
+                    }
+                }
+                else if (backpack->default_food->type == 'S') {
+                    player->hunger = 5;
+                    special_food_used = true;
+                    mvprintw(2, width / 2 - 9, "Special food used!");
+                    // needs work
+                }
+                else {
+                    player->hunger = 5;
+                    magic_food_used = true;
+                    player->fast_paced = 1;
+                    mvprintw(2, width / 2 - 8, "Magic food used!");
+                }
+                backpack->default_food->amount--;
+                show_hunger_bar(player);
+            }
             break;
         case 27:
             bool is_leaving = show_pause_menu(player, width);

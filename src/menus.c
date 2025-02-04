@@ -2,6 +2,10 @@
 
 
 char main_menu(Player* player) {
+    // Mix_Music** tracks = (Mix_Music**) calloc(8, sizeof(Mix_Music*));
+    // extract_tracks(tracks);
+    // Mix_VolumeMusic(MIX_MAX_VOLUME);
+    // Mix_PlayMusic(tracks[0], -1);
     clear();
     show_main_menu(player);
     char command;
@@ -370,3 +374,20 @@ Player* extract_players_stats(int* num_of_players) {
 
     return players;
 }
+
+
+// void music_menu() {
+
+// }
+
+
+// void extract_tracks(Mix_Music** tracks) {
+//     tracks[0] = load_music("Music/blood.mp3");
+//     tracks[1] = load_music("Music/champ.mp3");
+//     tracks[2] = load_music("Music/damned.mp3");
+//     tracks[3] = load_music("Music/doom.mp3");
+//     tracks[4] = load_music("Music/glory.mp3");
+//     tracks[5] = load_music("Music/life.mp3");
+//     tracks[6] = load_music("Music/playground.mp3");
+//     tracks[7] = load_music("Music/theme.mp3");
+// }

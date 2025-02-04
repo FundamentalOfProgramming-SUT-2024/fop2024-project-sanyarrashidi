@@ -4,6 +4,7 @@
 #include<ncurses.h>
 #include<ctype.h>
 #include "authenticate.h"
+#include "music.h"
 
 
 char main_menu(Player*);
@@ -17,3 +18,4 @@ void change_difficulty(Player*);
 void change_color(Player*);
 void change_hero(Player*);
 Player* extract_players_stats(int*);
+// void extract_tracks(Mix_Music**);

@@ -100,6 +100,19 @@ typedef struct {
 } Door;
 
 
+typedef struct {
+    int count_weapons;
+    Weapon* default_weapon;
+    Weapon** weapons;
+    int count_spells;
+    Spell* default_spell;
+    Spell** spells;
+    int count_food;
+    Food* default_food;
+    Food** food;
+} Backpack;
+
+
 Room** generate_map(int, int);
 Room** generate_rooms(Room**, int, int, int);
 int check_rooms(Room**, Room*, int);

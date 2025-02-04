@@ -9,19 +9,6 @@
 #include "database.h"
 
 
-typedef struct {
-    int count_weapons;
-    Weapon* default_weapon;
-    Weapon** weapons;
-    int count_spells;
-    Spell* default_spell;
-    Spell** spells;
-    int count_food;
-    Food* default_food;
-    Food** food;
-} Backpack;
-
-
 void game_ui(Player*, bool);
 int load_level(Player*, Backpack*, Room**, char**, char**, int*, int);
 void move_player(Player*, int, int);

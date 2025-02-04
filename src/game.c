@@ -9,6 +9,7 @@ void game_ui(Player* player, bool new) {
     init_color(12, 1000, 0, 0);
     init_color(13, 0, 1000, 0);
     init_color(14, 1000, 1000, 0);
+    init_color(15, 1000, 500, 0);
     init_pair(1, 11, COLOR_BLACK);
     init_pair(2, 13, COLOR_BLACK);
     init_pair(3, 10, COLOR_BLACK);
@@ -18,6 +19,7 @@ void game_ui(Player* player, bool new) {
     init_pair(7, 14, COLOR_BLACK);
     init_pair(8, COLOR_YELLOW, COLOR_BLACK);
     init_pair(9, COLOR_WHITE, 12);
+    init_pair(20, 15, COLOR_BLACK);
     
     if (!strcmp(player->difficulty, "easy")) {
         player->difficulty_coeff = 1;
@@ -30,18 +32,6 @@ void game_ui(Player* player, bool new) {
     }
 
     Backpack* backpack = (Backpack*) malloc(sizeof(Backpack));
-    backpack->count_weapons = 1;
-    backpack->weapons = (Weapon**) calloc(5, sizeof(Weapon*));
-    backpack->weapons[0] = (Weapon*) malloc(sizeof(Weapon));
-    backpack->weapons[0]->type = 'M';
-    backpack->weapons[0]->damage = 5;
-    backpack->weapons[0]->symbol = L'\u2692';
-    backpack->default_weapon = backpack->weapons[0];
-    backpack->spells = (Spell**) calloc(5, sizeof(Spell*));
-    backpack->count_spells = 0;
-    backpack->food = (Food**) calloc(5, sizeof(Food*));
-    backpack->count_food = 0;
-
     int level = player->current_level;
     int claimed_gold = 0;
 
@@ -56,9 +46,21 @@ void game_ui(Player* player, bool new) {
             corridors[i] = read_corridors(player, height, width, i + 1, false);
         }
 
+        backpack = read_backpack(player);
         result = load_level(player, backpack, all_levels[level - 1], final_corridors[level - 1], corridors[level - 1], &claimed_gold, level);
     }
     else {
+        backpack->count_weapons = 1;
+        backpack->weapons = (Weapon**) calloc(5, sizeof(Weapon*));
+        backpack->weapons[0] = (Weapon*) malloc(sizeof(Weapon));
+        backpack->weapons[0]->type = 'M';
+        backpack->weapons[0]->damage = 5;
+        backpack->weapons[0]->symbol = L'\u2692';
+        backpack->default_weapon = backpack->weapons[0];
+        backpack->spells = (Spell**) calloc(5, sizeof(Spell*));
+        backpack->count_spells = 0;
+        backpack->food = (Food**) calloc(5, sizeof(Food*));
+        backpack->count_food = 0;
         player->gold = 0;
         player->fast_paced = 0;
         player->hp = 100;
@@ -67,6 +69,8 @@ void game_ui(Player* player, bool new) {
         player->current_level = 1;
         result = load_level(player, backpack, NULL, NULL, NULL, &claimed_gold, level);
     }
+
+    save_backpack(player, backpack);
 
     while (result) {
         if (result == -1) {
@@ -751,6 +755,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 save_corridors_to_file(player, current_corridors, height, width, level, false);
                 save_player(player);
                 save_rooms(rooms, player, level);
+                save_backpack(player, backpack);
                 mvprintw(2, width / 2 - 12, "Your game has been saved!");
                 refresh();
                 getch();
@@ -1295,7 +1300,7 @@ void show_health_bar(Player* player) {
 
 void show_hunger_bar(Player* player) {
     mvprintw(3, 16 + strlen(player->username), "\U0001F357");
-    attron(COLOR_PAIR(7));
+    attron(COLOR_PAIR(20));
     mvprintw(3, 18 + strlen(player->username), "╠");
     for (int i = 0; i < player->hunger; i++) {
         mvprintw(3, 19 + strlen(player->username) + i, "▌");
@@ -1307,7 +1312,7 @@ void show_hunger_bar(Player* player) {
 
     mvprintw(3, 24 + strlen(player->username), "╣");
     mvprintw(3, 26 + strlen(player->username), "%d", player->hunger);
-    attroff(COLOR_PAIR(7));
+    attroff(COLOR_PAIR(20));
     refresh();
 }
 

@@ -288,3 +288,100 @@ void save_player(Player* player) {
 
     fclose(to_write_file);
 }
+
+
+void save_backpack(Player* player, Backpack* backpack) {
+    chdir("data");
+    chdir(player->username);
+    FILE* to_write_file = fopen("backpack.txt", "w");
+    fprintf(to_write_file, "%d\n", backpack->count_weapons);
+    fprintf(to_write_file, "%c,%d,%d,\n", backpack->default_weapon->type, backpack->default_weapon->damage, backpack->default_weapon->ammo);
+    for (int i = 0; i < backpack->count_weapons; i++) {
+        if (backpack->weapons[i]->type == backpack->default_weapon->type) {
+            continue;
+        }
+        fprintf(to_write_file, "%c,%d,%d,\n", backpack->weapons[i]->type, backpack->weapons[i]->damage, backpack->weapons[i]->ammo);
+    }
+
+    fprintf(to_write_file, "%d\n", backpack->count_spells);
+    if (backpack->count_spells > 0) {
+        fprintf(to_write_file, "%c,%d,\n", backpack->default_spell->type, backpack->default_spell->amount);
+        for (int i = 0; i < backpack->count_spells; i++) {
+            if (backpack->spells[i]->type == backpack->default_spell->type) {
+                continue;
+            }
+            fprintf(to_write_file, "%c,%d,\n", backpack->spells[i]->type, backpack->spells[i]->amount);
+        }
+    }
+
+    fprintf(to_write_file, "%d\n", backpack->count_food);
+    if (backpack->count_food > 0) {
+        fprintf(to_write_file, "%c,%d,\n", backpack->default_food->type, backpack->default_food->amount);
+        for (int i = 0; i < backpack->count_food; i++) {
+            if (backpack->food[i]->type == backpack->default_food->type) {
+                continue;
+            }
+            fprintf(to_write_file, "%c,%d,\n", backpack->food[i]->type, backpack->food[i]->amount);
+        }
+    }
+
+    fclose(to_write_file);
+    chdir("..");
+    chdir("..");
+}
+
+
+Backpack* read_backpack(Player* player) {
+    chdir("data");
+    chdir(player->username);
+    Backpack* backpack = (Backpack*) calloc(1, sizeof(Backpack));
+    FILE* data_file = fopen("backpack.txt", "r");
+
+    fscanf(data_file, "%d", &backpack->count_weapons);
+    backpack->default_weapon = (Weapon*) calloc(1, sizeof(Weapon));
+    backpack->weapons = (Weapon**) calloc(backpack->count_weapons, sizeof(Weapon*));
+    for (int i = 0; i < backpack->count_weapons; i++) {
+        backpack->weapons[i] = (Weapon*) calloc(1, sizeof(Weapon));
+    }
+
+    fscanf(data_file, " %c,%d,%d,", &backpack->default_weapon->type, &backpack->default_weapon->damage, &backpack->default_weapon->ammo);
+    backpack->weapons[0] = backpack->default_weapon;
+    for (int i = 1; i < backpack->count_weapons; i++) {
+        fscanf(data_file, " %c,%d,%d,", &backpack->weapons[i]->type, &backpack->weapons[i]->damage, &backpack->weapons[i]->ammo);
+    }
+
+    fscanf(data_file, "%d", &backpack->count_spells);
+    backpack->default_spell = (Spell*) calloc(1, sizeof(Spell));
+    backpack->spells = (Spell**) calloc(backpack->count_spells, sizeof(Spell*));
+    for (int i = 0; i < backpack->count_spells; i++) {
+        backpack->spells[i] = (Spell*) calloc(1, sizeof(Spell));
+    }
+
+    if (backpack->count_spells > 0) {
+        fscanf(data_file, " %c,%d,", &backpack->default_spell->type, &backpack->default_spell->amount);
+        backpack->spells[0] = backpack->default_spell;
+        for (int i = 1; i < backpack->count_spells; i++) {
+            fscanf(data_file, " %c,%d,", &backpack->spells[i]->type, &backpack->spells[i]->amount);
+        }
+    }
+
+    fscanf(data_file, "%d", &backpack->count_food);
+    backpack->default_food = (Food*) calloc(1, sizeof(Food));
+    backpack->food = (Food**) calloc(backpack->count_food, sizeof(Food*));
+    for (int i = 0; i < backpack->count_food; i++) {
+        backpack->food[i] = (Food*) calloc(1, sizeof(Food));
+    }
+
+    if (backpack->count_food > 0) {
+        fscanf(data_file, " %c,%d,", &backpack->default_food->type, &backpack->default_food->amount);
+        backpack->food[0] = backpack->default_food;
+        for (int i = 1; i < backpack->count_food; i++) {
+            fscanf(data_file, " %c,%d,", &backpack->food[i]->type, &backpack->food[i]->amount);
+        }
+    }
+
+    fclose(data_file);
+    chdir("..");
+    chdir("..");
+    return backpack;
+}

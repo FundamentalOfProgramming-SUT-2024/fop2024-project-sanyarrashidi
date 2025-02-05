@@ -83,6 +83,7 @@ Player* new_user(Player* new_player, int height, int width) {
     new_player->username = (char*) calloc(50, sizeof(char));
     new_player->password = (char*) calloc(50, sizeof(char));
     new_player->email = (char*) calloc(50, sizeof(char));
+    new_player->security = (char*) calloc(50, sizeof(char));
 
     int username_is_valid = 0;
     while (!username_is_valid) {
@@ -99,10 +100,17 @@ Player* new_user(Player* new_player, int height, int width) {
 
     int pass_is_valid = 0;
     while (!pass_is_valid) {
-        mvprintw(height / 2 - 4, (width - 20) / 2, "Enter your password:");
+        mvprintw(height / 2 - 4, (width - 20) / 2, "Enter your password:(if you want a random password enter 'generate')");
         move(height / 2 - 2, (width - 18) / 2);
         refresh();
         getstr(new_player->password);
+        if (!strcmp(new_player->password, "generate")) {
+            new_player->password = generate_password();
+            move(height / 2 - 2, (width - 18) / 2);
+            clrtoeol();
+            mvprintw(height / 2 - 2, (width - 18) / 2, "New password: %s", new_player->password);
+            break;
+        }
         pass_is_valid = check_pass(new_player->password, height, width);
     }
 
@@ -115,8 +123,13 @@ Player* new_user(Player* new_player, int height, int width) {
         email_is_valid = check_email(new_player->email, height, width);
     }
 
+    mvprintw(height / 2 + 8, (width - 20) / 2, "Enter your birthplace name:");
+    move(height / 2 + 10, (width - 18) / 2);
+    refresh();
+    getstr(new_player->security);
+
     FILE* data_file = fopen("data/players.csv", "a");
-    fprintf(data_file, "%s,%s,%s\n", new_player->username, new_player->password, new_player->email);
+    fprintf(data_file, "%s,%s,%s,%s,\n", new_player->username, new_player->password, new_player->email, new_player->security);
     fclose(data_file);
     FILE* stat_file = fopen("data/stats.csv", "a");
     fprintf(stat_file, "%s,0,0,0,0,\u265C,white,medium,0,100,5,1,1,0,0,\n", new_player->username);
@@ -144,6 +157,8 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
         players[player_counter].password = strdup(player_inf);
         player_inf = strtok(NULL, ",");
         players[player_counter].email = strdup(player_inf);
+        player_inf = strtok(NULL, ",");
+        players[player_counter].security = strdup(player_inf);
         player_counter++;
     }
     
@@ -162,6 +177,7 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
     curs_set(1);
     echo();
     clear();
+    bool security_mode = false;
     selected_player = players + player_num - 1;
     char* entered_pass = (char*) calloc(100, sizeof(char));
     int attempts = 3;
@@ -174,14 +190,35 @@ Player* login(FILE* data_file, Player* selected_player, int height, int width) {
         }
         move(height / 2 - 8, 0);
         clrtoeol();
+        mvprintw(height / 2 - 12, width / 2 - 24, "Enter 'security' to enter forgot password mode.");
         mvprintw(height / 2 - 10, (width - (40 + strlen(selected_player->username))) / 2, "Enter password for \"%s\":(%d attempts left)", selected_player->username, attempts);
         refresh();
         move(height / 2 - 8, (width - 18) / 2);
         getstr(entered_pass);
         if (!strcmp(entered_pass ,selected_player->password))
             break;
+        else if (!strcmp(entered_pass, "security")) {
+            security_mode = true;
+            break;
+        }
         else
             attempts--;
+    }
+
+    if (security_mode) {
+        clear();
+        char* entered_security = (char*) calloc(50, sizeof(char));
+        mvprintw(height / 2 - 10, width / 2 - 26, "Enter your birthplace name(You only have 1 chance!):");
+        move(height / 2 - 8, (width - 18) / 2);
+        getstr(entered_security);
+        if (!strcmp(entered_security, selected_player->security)) {
+            mvprintw(height / 2, (width - (strlen(selected_player->password) + 17)) / 2, "Your password is %s", selected_player->password);
+            getch();
+            return selected_player;
+        }
+        else {
+            return NULL;
+        }
     }
 
     if (attempts) {
@@ -353,4 +390,38 @@ void get_player_stat(Player* player) {
     stats = strtok(NULL, ",");
     player->y = atoi(stats);
     fclose(stat_file);
+}
+
+
+char* generate_password() {
+    srand(time(NULL));
+    int length = rand() % 5 + 8;
+    char* password = (char*) calloc(length, sizeof(char));
+    const char* uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const char* lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const char* digits = "0123456789";
+    char *all_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (int i = 0; i < 3; i++) {
+        int rand_char = rand() % length;
+        int rand_index = rand() % 26;
+        if (i == 0) {
+            password[rand_char] = uppercase[rand_index];
+        }
+        else if (i == 1) {
+            password[rand_char] = lowercase[rand_index];
+        }
+        else {
+            rand_index = rand() % 10;
+            password[rand_char] = digits[rand_index];
+        }
+    }
+
+    for (int i = 0; i < length; i++) {
+        if (password[i] == 0) {
+            int rand_index = rand() % 62;
+            password[i] = all_chars[rand_index];
+        }
+    }
+
+    return password;
 }

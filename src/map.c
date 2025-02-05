@@ -276,7 +276,7 @@ Room** generate_rooms(Room** rooms, int total_rooms, int level, int difficulty) 
             }
 
             valid_position = true;
-            new_room->monster_count = rand() % 3 + (new_room->height * new_room->width) / 35;
+            new_room->monster_count = rand() % 2 + (new_room->height * new_room->width) / 35 + 1;
             new_room->monsters = (Monster**) calloc(new_room->monster_count, sizeof(Monster*));
             for (int j = 0; j < new_room->monster_count; j++) {
                 new_room->monsters[j] = (Monster*) calloc(1, sizeof(Monster));

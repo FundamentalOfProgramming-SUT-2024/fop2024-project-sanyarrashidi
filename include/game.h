@@ -29,3 +29,5 @@ Room* get_current_room(Room**, int, int);
 void show_game_bar(Player*, Backpack*, int);
 bool show_pause_menu(Player*, int);
 void show_options_menu(Player*, int);
+Monster** battle_room(Player*, Backpack*, int, int, int*, int*);
+void show_battle_bar(Backpack*, int);

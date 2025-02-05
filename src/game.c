@@ -174,6 +174,13 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     bool damage_spell_used = false;
     bool special_food_used = false;
     bool magic_food_used = false;
+    bool entered_battle_room = false;
+    int kills = 0;
+    Monster** battle_monsters = (Monster**) calloc(20, sizeof(Monster*));
+    int main_x;
+    int main_y;
+    int last_trap_x;
+    int last_trap_y;
 
     bool game_is_running = true;
     nodelay(stdscr, TRUE);
@@ -182,12 +189,14 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     long last_ench_effect_update;
     long last_spell_effect_update = 0;
     long last_food_effect_update = 0;
+    long last_monster_update;
     const long hunger_interval = 60 * 1000000L;
     const long hunger_to_damage_interval = 60 * 1000000L;
     const long recover_health_interval = 5 * 1000000L;
     const long enchant_room_effect_interval = 5 * 1000000L;
     const long spell_effect_interval = 10 * 1000000L;
     const long food_effect_interval = 10 * 1000000L;
+    const long monster_movement_interval = 1 * 1000000L;
     Room* current_room = rooms[0];
     while (game_is_running) {
         command = getch();
@@ -206,6 +215,14 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
         bottom_reached = (current_y == height - 1);
         left_reached = (current_x == 0);
         right_reached = (current_x == width - 1);
+
+        int num_monsters;
+        if (current_room != NULL && current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+            num_monsters = 20;
+        }
+        else {
+            num_monsters = 12;
+        }
 
         long current_time = get_current_time();
         if (player->hunger > 0 && current_time - last_hunger_update >= hunger_interval) {
@@ -233,10 +250,30 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             speed_spell_used = false;
         }
 
+        if (damage_spell_used && current_time - last_spell_effect_update >= spell_effect_interval) {
+            for (int i = 0; i < backpack->count_weapons; i++) {
+               backpack->weapons[i]->damage /= 2;
+            }
+            damage_spell_used = false;
+        }
+
+        if (special_food_used && current_time - last_food_effect_update >= food_effect_interval) {
+            for (int i = 0; i < backpack->count_weapons; i++) {
+                backpack->weapons[i]->damage /= 2;
+            }
+            special_food_used = false;
+        }
+
         if (magic_food_used && current_time - last_food_effect_update >= food_effect_interval) {
             player->fast_paced = 0;
             magic_food_used = false;
         }
+
+        if (entered_battle_room && current_time - last_monster_update >= monster_movement_interval) {
+            monster_movments(battle_monsters, player, num_monsters);
+            last_monster_update = get_current_time();
+        }
+
 
         if (player->hp == 0) {
             death(width);
@@ -245,7 +282,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             getch();
         }
 
-        if (current_room != NULL && current_room->type == 'E') {
+        if (current_room != NULL && current_room->type == 'E' && !entered_battle_room) {
             if (current_time - last_ench_effect_update >= enchant_room_effect_interval) {
                 player->hp -= 5;
                 last_ench_effect_update = current_time;
@@ -258,7 +295,34 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
 
         switch (command) {
         case 'q':
-            game_is_running = false;
+            if (entered_battle_room) {
+                entered_battle_room = false;
+                clear();
+                for (int i = 0; i < rooms[0]->total_rooms; i++) {
+                    if (rooms[i]->visited) {
+                        display_single_room(rooms[i]);
+                    }
+                }
+
+                for (int i = 0; i < height; i++) {
+                    for (int j = 0; j < width; j++) {
+                        if (corridors[i][j] == '#' || corridors[i][j] == '+') {
+                            mvprintw(i, j, "%c", corridors[i][j]);
+                        }
+                    }
+                }
+
+                player->x = main_x;
+                player->y = main_y;
+                current_x = main_x;
+                current_y = main_y;
+                move_player(player, main_y, main_x);
+                show_game_bar(player, backpack, *claimed_gold);
+                mvprintw(last_trap_y, last_trap_x, "\U0001F571");
+            }
+            else {
+                game_is_running = false;
+            }
             break;
         case '8':
             if (top_reached) {
@@ -269,9 +333,25 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                    entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x;
+                    main_y = current_y - 1;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_y++;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -315,9 +395,25 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                     entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x - 1;
+                    main_y = current_y;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_x--;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -361,9 +457,25 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                     entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x;
+                    main_y = current_y + 1;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_y--;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -407,9 +519,25 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                     entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x - 1;
+                    main_y = current_y;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_x++;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -453,9 +581,26 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                     entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x - 1;
+                    main_y = current_y - 1;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_x++;
+                    current_y++;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -501,9 +646,26 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                     entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x + 1;
+                    main_y = current_y - 1;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_x--;
+                    current_y++;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -549,9 +711,26 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                     entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x + 1;
+                    main_y = current_y + 1;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_x--;
+                    current_y--;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -597,9 +776,26 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 if (!player->fast_paced) {    
                     usleep(150000);
                 }
-                if (trap_triggered) {
+                if (trap_triggered && !entered_battle_room) {
                     mvprintw(current_y, current_x, "\U0001F571");
                     trap_triggered = false;
+                     entered_battle_room = true;
+                    int num_monsters;
+                    if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        num_monsters = 20;
+                    }
+                    else {
+                        num_monsters = 12;
+                    }
+                    main_x = current_x - 1;
+                    main_y = current_y + 1;
+                    last_trap_x = current_x;
+                    last_trap_y = current_y;
+                    corridors = save_corridors();
+                    battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+                    current_x++;
+                    current_y--;
+                    show_battle_bar(backpack, kills);
                 }
                 else if (found_coin && prev_char != '.') {
                     attron(COLOR_PAIR(3));
@@ -790,7 +986,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 else {
                     damage_spell_used = true;
                     mvprintw(2, width / 2 - 9, "Damage spell used!");
-                    // needs work
+                    for (int i = 0; i < backpack->count_weapons; i++) {
+                        backpack->weapons[i]->damage *= 2;
+                    }
                 }
                 backpack->default_spell->amount--;
                 last_spell_effect_update = get_current_time();
@@ -814,7 +1012,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     player->hunger = 5;
                     special_food_used = true;
                     mvprintw(2, width / 2 - 9, "Special food used!");
-                    // needs work
+                    for (int i = 0; i < backpack->count_weapons; i++) {
+                        backpack->weapons[i]->damage *= 2;
+                    }
                 }
                 else {
                     player->hunger = 5;
@@ -823,6 +1023,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                     mvprintw(2, width / 2 - 8, "Magic food used!");
                 }
                 backpack->default_food->amount--;
+                last_food_effect_update = get_current_time();
                 show_hunger_bar(player);
             }
             break;
@@ -844,7 +1045,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             break;
         }
 
-        if (prev_char == '+') {
+        if (prev_char == '+' && !entered_battle_room) {
             Room* visited_room = find_room_by_door(rooms, current_y, current_x);
             if (!visited_room->visited) {
                 visited_room->visited = true;
@@ -860,7 +1061,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             }
         }
 
-        if (!found_hidden && found_hidden_door(current_y, current_x, hidden_door_y, hidden_door_x)) {
+        if (!entered_battle_room && !found_hidden && found_hidden_door(current_y, current_x, hidden_door_y, hidden_door_x)) {
             found_hidden = true;
             mvaddch(hidden_door_y, hidden_door_x, '$');
             mvprintw(2, width / 2 - 15, "You have found a hidden door!");
@@ -895,12 +1096,16 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             }
         }
 
-        trap_triggered = stepped_on_trap(rooms, player, current_y, current_x, width);
-        found_coin = stepped_on_loot(rooms, current_y, current_x, width);
-        found_spell = stepped_on_spell(rooms, current_y, current_x, width);
-        found_food = stepped_on_food(rooms, current_y, current_x, width);
-        found_weapon = stepped_on_weapon(rooms, current_y, current_x, width);
-
+        if (!entered_battle_room) {
+            trap_triggered = stepped_on_trap(rooms, player, current_y, current_x, width);
+            found_coin = stepped_on_loot(rooms, current_y, current_x, width);
+            found_spell = stepped_on_spell(rooms, current_y, current_x, width);
+            found_food = stepped_on_food(rooms, current_y, current_x, width);
+            found_weapon = stepped_on_weapon(rooms, current_y, current_x, width);
+        }
+        else {
+            show_battle_bar(backpack, kills);
+        }
         refresh();
         move(current_y, current_x);
         usleep(10000);
@@ -1600,4 +1805,563 @@ void show_options_menu(Player* player, int width) {
     mvprintw(1, width / 2 - 8, "Press R to resume");
     mvprintw(2, width / 2 - 8, "Press S to save and leave");
     mvprintw(3, width / 2 - 8, "Press O to open settings");
+}
+
+
+Monster** battle_room(Player* player, Backpack* backpack, int claimed_gold, int num_monsters, int* current_y, int* current_x) {
+    clear();
+    show_game_bar(player, backpack, claimed_gold);
+    int room_corner_y = 8;
+    int room_corner_x = 10;
+    int room_height = 18;
+    int room_width = 60;
+    for (int i = 1; i < room_height; i++) {
+        mvprintw(room_corner_y + i, room_corner_x, "|");
+        mvprintw(room_corner_y + i, room_corner_x + room_width, "|");
+    }
+    for (int i = 0; i <= room_width; i++) {
+        attron(COLOR_PAIR(4) | A_UNDERLINE);
+        mvprintw(room_corner_y, room_corner_x + i, "-");
+        mvprintw(room_corner_y + room_height, room_corner_x + i, "-");
+        attroff(COLOR_PAIR(4) | A_UNDERLINE);
+    }
+    for (int i = 1; i < room_height; i++) {
+        for (int j = 1; j < room_width; j++) {
+            mvprintw(room_corner_y + i, room_corner_x + j, ".");
+        }
+    }
+    move_player(player, room_corner_y + 1, room_corner_x + 1);
+    player->y = room_corner_y + 1;
+    player->x = room_corner_x + 1;
+    *current_x = room_corner_x + 1;
+    *current_y = room_corner_y + 1;
+
+    Monster** monsters = (Monster**) calloc(num_monsters, sizeof(Monster*));
+    bool valid_position = false;
+    for (int i = 0; i < num_monsters; i++) {
+        monsters[i] = (Monster*) malloc(sizeof(Monster));
+        monsters[i]->y = room_corner_y + 2 + rand() % (room_height - 4);
+        monsters[i]->x = room_corner_x + 2 + rand() % (room_width - 4);
+        int prob = rand() % 10 + 1;
+        if (prob <= 1) {
+            monsters[i]->type = 'D';
+            monsters[i]->damage = 3 * player->difficulty_coeff;
+            monsters[i]->hp = 5;
+            monsters[i]->alive = true;
+            monsters[i]->range = 1;
+        }
+        else if (prob <= 3) {
+            monsters[i]->type = 'F';
+            monsters[i]->damage = 5 * player->difficulty_coeff;
+            monsters[i]->hp = 10;
+            monsters[i]->alive = true;
+            monsters[i]->range = 1;
+        }
+        else if (prob <= 6) {
+            monsters[i]->type = 'G';
+            monsters[i]->damage = 7 * player->difficulty_coeff;
+            monsters[i]->hp = 15;
+            monsters[i]->alive = true;
+            monsters[i]->range = 5;
+        }
+        else if (prob <= 8) {
+            monsters[i]->type = 'S';
+            monsters[i]->damage = 10 * player->difficulty_coeff;
+            monsters[i]->hp = 20;
+            monsters[i]->alive = true;
+            monsters[i]->range = 1000;
+        }
+        else {
+            monsters[i]->type = 'U';
+            monsters[i]->damage = 15 * player->difficulty_coeff;
+            monsters[i]->hp = 30;
+            monsters[i]->alive = true;
+            monsters[i]->range = 5;
+        }
+
+        attron(COLOR_PAIR(4));
+        mvaddch(monsters[i]->y, monsters[i]->x, monsters[i]->type);
+        attroff(COLOR_PAIR(4));
+    }
+
+    return monsters;
+}
+
+
+void show_battle_bar(Backpack* backpack, int kills) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    for (int i = 5; i < height - 4; i++) {
+        mvprintw(i, width - 20, "|");
+        mvprintw(i, width - 1, "|");
+    }
+    for (int i = 20; i > 0; i--) {
+        attron(A_UNDERLINE);
+        mvprintw(height - 4, width - i, "-");
+        mvprintw(14, width - i, "-");
+        mvprintw(19, width - i, "-");
+        attroff(A_UNDERLINE);
+    }
+
+    attron(COLOR_PAIR(4));
+    mvprintw(6, width - 18, "Total kills: %d", kills);
+    attroff(COLOR_PAIR(4));
+
+    for (int i = 0; i < backpack->count_weapons; i++) {
+        if (backpack->weapons[i]->type == 'M') {
+            mvprintw(8 + i, width - 18, "%d.\u2692 Mace", i + 1);
+        }
+        else if (backpack->weapons[i]->type == 'S') {
+            mvprintw(8 + i, width - 18, "%d.\u2694 Sword", i + 1);
+        }
+        else if (backpack->weapons[i]->type == 'A') {
+            mvprintw(8 + i, width - 18, "%d.\U0001F3F9 Arrow (%d)", i + 1, backpack->weapons[i]->ammo);
+        }
+        else if (backpack->weapons[i]->type == 'D') {
+            mvprintw(8 + i, width - 18, "%d.\U0001F5E1 Dagger (%d)", i + 1, backpack->weapons[i]->ammo);
+        }
+        else if (backpack->weapons[i]->type == 'W') {
+            mvprintw(8 + i, width - 18, "%d.\U0001FA84 Magic Wand (%d)", i + 1, backpack->weapons[i]->ammo);
+        }
+    }
+
+    for (int i = 0; i < backpack->count_spells; i++) {
+        if (backpack->spells[i]->type == 'H') {
+            mvprintw(16 + i, width - 18, "%d.\U0001F496 Health spell (%d)", i + 1, backpack->spells[i]->amount);
+        }
+        else if (backpack->spells[i]->type == 'S') {
+            mvprintw(16 + i, width - 18, "%d.\u26A1 Speed spell (%d)", i + 1, backpack->spells[i]->amount);
+        }
+        else {
+            mvprintw(16 + i, width - 18, "%d.\u2620 Damage spell (%d)", i + 1, backpack->spells[i]->amount);
+        }
+    }
+
+    for (int i = 0; i < backpack->count_food; i++) {
+        if (backpack->food[i]->type == 'N') {
+            mvprintw(21 + i, width - 18, "%d.\U0001F36B Normal food (%d)", i + 1, backpack->food[i]->amount);
+        }
+        else if (backpack->food[i]->type == 'S') {
+            mvprintw(21 + i, width - 18, "%d.\U0001F35F Special food (%d)", i + 1, backpack->food[i]->amount);
+        }
+        else {
+            mvprintw(21 + i, width - 18, "%d.\U0001F354 Magic food (%d)", i + 1, backpack->food[i]->amount);
+        }
+    }
+}
+
+
+void monster_movments(Monster** monsters, Player* player, int num_monsters) {
+    static updates = 0;
+    for (int i = 0; i < num_monsters; i++) {
+        if (monsters[i]->type == 'G') {
+            if (distance(player->x, player->y, monsters[i]->x, monsters[i]->y) <= monsters[i]->range) {
+                if (player->x == monsters[i]->x) {
+                    if (player->y > monsters[i]->y && mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y++;
+                    }
+                    else if (player->y < monsters[i]->y && mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y--;
+                    }
+                }
+                else if (player->y == monsters[i]->y) {
+                    if (player->x > monsters[i]->x && mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->x++;
+                    }
+                    else if (player->x < monsters[i]->x && mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y--;
+                    }
+                }
+                else {
+                    if (player->y > monsters[i]->y && player->x > monsters[i]->x) {
+                        if (mvinch(monsters[i]->y + 1, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                        }
+                    }
+                    else if (player->y < monsters[i]->y && player->x > monsters[i]->x) {
+                        if (mvinch(monsters[i]->y - 1, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                        }
+                    }
+                    else if (player->y > monsters[i]->y && player->x < monsters[i]->x) {
+                        if (mvinch(monsters[i]->y + 1, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                        }
+                    }
+                    else {
+                        if (mvinch(monsters[i]->y - 1, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                        }
+                    }
+                }
+            }
+        }
+        else if (monsters[i]->type == 'S') {
+            if (!(updates % 2) && distance(player->x, player->y, monsters[i]->x, monsters[i]->y) <= monsters[i]->range) {
+                if (player->x == monsters[i]->x) {
+                    if (player->y > monsters[i]->y && mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y++;
+                    }
+                    else if (player->y < monsters[i]->y && mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y--;
+                    }
+                }
+                else if (player->y == monsters[i]->y) {
+                    if (player->x > monsters[i]->x && mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->x++;
+                    }
+                    else if (player->x < monsters[i]->x && mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y--;
+                    }
+                }
+                else {
+                    if (player->y > monsters[i]->y && player->x > monsters[i]->x) {
+                        if (mvinch(monsters[i]->y + 1, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                        }
+                    }
+                    else if (player->y < monsters[i]->y && player->x > monsters[i]->x) {
+                        if (mvinch(monsters[i]->y - 1, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                        }
+                    }
+                    else if (player->y > monsters[i]->y && player->x < monsters[i]->x) {
+                        if (mvinch(monsters[i]->y + 1, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                        }
+                    }
+                    else {
+                        if (mvinch(monsters[i]->y - 1, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                        }
+                    }
+                }
+            }
+        }
+        else if (monsters[i]->type == 'U') {
+            if (distance(player->x, player->y, monsters[i]->x, monsters[i]->y) <= monsters[i]->range) {
+                if (player->x == monsters[i]->x) {
+                    if (player->y > monsters[i]->y && mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y++;
+                    }
+                    else if (player->y < monsters[i]->y && mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y--;
+                    }
+                }
+                else if (player->y == monsters[i]->y) {
+                    if (player->x > monsters[i]->x && mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->x++;
+                    }
+                    else if (player->x < monsters[i]->x && mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                        mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                        attron(COLOR_PAIR(4));
+                        mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                        attroff(COLOR_PAIR(4));
+                        monsters[i]->y--;
+                    }
+                }
+                else {
+                    if (player->y > monsters[i]->y && player->x > monsters[i]->x) {
+                        if (mvinch(monsters[i]->y + 1, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                        }
+                    }
+                    else if (player->y < monsters[i]->y && player->x > monsters[i]->x) {
+                        if (mvinch(monsters[i]->y - 1, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x + 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x + 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x++;
+                        }
+                        else if (mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                        }
+                    }
+                    else if (player->y > monsters[i]->y && player->x < monsters[i]->x) {
+                        if (mvinch(monsters[i]->y + 1, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y + 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y + 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y++;
+                        }
+                    }
+                    else {
+                        if (mvinch(monsters[i]->y - 1, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y, monsters[i]->x - 1) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y, monsters[i]->x - 1, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->x--;
+                        }
+                        else if (mvinch(monsters[i]->y - 1, monsters[i]->x) == '.') {
+                            mvaddch(monsters[i]->y, monsters[i]->x, '.');
+                            attron(COLOR_PAIR(4));
+                            mvaddch(monsters[i]->y - 1, monsters[i]->x, monsters[i]->type);
+                            attroff(COLOR_PAIR(4));
+                            monsters[i]->y--;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    updates++;
+}
+
+
+int distance(int x1, int y1, int x2, int y2) {
+    return abs(x2 - x1) + abs(y2 - y1);
 }

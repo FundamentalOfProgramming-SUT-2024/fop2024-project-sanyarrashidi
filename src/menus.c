@@ -2,10 +2,16 @@
 
 
 char main_menu(Player* player) {
-    // Mix_Music** tracks = (Mix_Music**) calloc(8, sizeof(Mix_Music*));
-    // extract_tracks(tracks);
+    // Mix_Music* track1 = load_music("Music/blood.mp3");
+    // Mix_Music* track2 = load_music("Music/champ.mp3");
+    // Mix_Music* track3 = load_music("Music/damned.mp3");
+    // Mix_Music* track4 = load_music("Music/doom.mp3");
+    // Mix_Music* track5 = load_music("Music/glory.mp3");
+    // Mix_Music* track6 = load_music("Music/life.mp3");
+    // Mix_Music* track7 = load_music("Music/playground.mp3");
+    // Mix_Music* track8 = load_music("Music/theme.mp3");
     // Mix_VolumeMusic(MIX_MAX_VOLUME);
-    // Mix_PlayMusic(tracks[0], -1);
+    // Mix_PlayMusic(track1, -1);
     clear();
     show_main_menu(player);
     char command;
@@ -42,12 +48,16 @@ void show_main_menu(Player* player) {
     clear();
     int height, width;
     getmaxyx(stdscr, height, width);
+    init_color(10, 800, 800, 800);
+    init_color(11, 804, 498, 196);
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
     init_pair(3, COLOR_RED, COLOR_BLACK);
     init_pair(4, COLOR_GREEN, COLOR_BLACK);
     init_pair(5, COLOR_CYAN, COLOR_BLACK);
     init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(7, COLOR_BLACK, 10);
+    init_pair(8, COLOR_BLACK, 11);
     attron(COLOR_PAIR(1));
     mvprintw(height / 2 - 10, (width - (8 + strlen(player->username))) / 2, "Welcome %s", player->username);
     refresh();
@@ -68,41 +78,32 @@ void show_profile(Player* player) {
     clear();
     int height, width;
     getmaxyx(stdscr, height, width);
-    mvprintw(10, width / 4 - 2, "Press ANY KEY to go back to main menu");
+    mvprintw(height / 2 - 11, width / 4 - 2, "Press ANY KEY to go back to main menu");
     refresh();
     attron(COLOR_PAIR(1));
     mvprintw(height / 2 - 8, width / 4, "Username: %s", player->username);
     mvprintw(height / 2 - 6, width / 4, "Password: %s", player->password);
     mvprintw(height / 2 - 4, width / 4, "Email: %s", player->email);
-    refresh();
     attroff(COLOR_PAIR(1));
     attron(COLOR_PAIR(3));
     mvprintw(height / 2 - 2, width / 4, "Points scored: %d", player->score);
-    refresh();
     attroff(COLOR_PAIR(3));
     attron(COLOR_PAIR(2));
     mvprintw(height / 2, width / 4, "Gold achived: %d", player->gold);
-    refresh();
     attroff(COLOR_PAIR(2));
     attron(COLOR_PAIR(5));
     mvprintw(height / 2 + 2, width / 4, "Finished games: %d", player->finished);
-    refresh();
     attroff(COLOR_PAIR(5));
     attron(COLOR_PAIR(4));
-    mvprintw(height / 2 + 4, width / 4, "Time played: %d", player->exp);
-    refresh();
+    mvprintw(height / 2 + 4, width / 4, "Hero: %s", player->hero);
     attroff(COLOR_PAIR(4));
-    attron(COLOR_PAIR(3));
-    mvprintw(height / 2 + 6, width / 4, "Hero: %s", player->hero);
-    attroff(COLOR_PAIR(3));
     attron(COLOR_PAIR(6));
-    mvprintw(height / 2 + 8, width / 4, "Hero color: %s", player->color);
-    refresh();
+    mvprintw(height / 2 + 6, width / 4, "Hero color: %s", player->color);
     attroff(COLOR_PAIR(6));
     attron(COLOR_PAIR(2));
-    mvprintw(height / 2 + 10, width / 4, "Game difficulty: %s", player->difficulty);
-    refresh();
+    mvprintw(height / 2 + 8, width / 4, "Game difficulty: %s", player->difficulty);
     attroff(COLOR_PAIR(2));
+    refresh();
     getch();
 }
 
@@ -122,36 +123,59 @@ void show_scoreboard(Player* player) {
     Player* players = extract_players_stats(player_counter);
 
     qsort(players, *player_counter, sizeof(Player), compare_players_by_score);
-    mvprintw(8, (width - 68) / 2, " #|      username      |  score   |   gold   | finished | experience");
+    mvprintw(8, (width - 68) / 2, " #|      username      |  score   |   gold   | finished |");
     for (int i = 0; i < *player_counter; i++) {
+        if (i >= 10) {
+            break;
+        }
         mvprintw(10 + 2 * (i - 1) + 1, (width - 68) / 2, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
         refresh();
         if (!strcmp(players[i].username, player->username)) {
             attron(COLOR_PAIR(4));
-            mvprintw(10 + 2 * i, (width - 68) / 2 - 2, "->%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            mvprintw(10 + 2 * i, (width - 68) / 2 - 2, "->%2d|%-20s|%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished);
+            if (i == 0) {
+                mvprintw(10 + 2 * i, (width - 78) / 2, "\U0001F3C6 ");
+                attroff(COLOR_PAIR(4));
+                mvprintw(10 + 2 * i, width / 2 + 23, "(The GOAT)");
+            }
+            else if (i == 1) {
+                mvprintw(10 + 2 * i, (width - 78) / 2, "\U0001F948 ");
+                attroff(COLOR_PAIR(4));
+                mvprintw(10 + 2 * i, width / 2 + 23, "(The LEGEND)");
+            }
+            else if (i == 2) {
+                mvprintw(10 + 2 * i, (width - 78) / 2, "\U0001F949 ");
+                attroff(COLOR_PAIR(4));
+                mvprintw(10 + 2 * i, width / 2 + 23, "(The MASTER)");
+            }
+            else {
+                attroff(COLOR_PAIR(4));
+            }
             refresh();
-            attroff(COLOR_PAIR(4));
         }
         else if (i == 0) {
             attron(COLOR_PAIR(1) | A_BOLD);
-            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            mvprintw(10 + 2 * i, (width - 78) / 2, "\U0001F3C6   %2d|%-20s|%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished);
             refresh();
             attroff(COLOR_PAIR(1) | A_BOLD);
+            mvprintw(10 + 2 * i, width / 2 + 23, "(The GOAT)");
         }
         else if (i == 1) {
-            attron(COLOR_PAIR(2) | A_BOLD);
-            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            attron(COLOR_PAIR(7) | A_BOLD);
+            mvprintw(10 + 2 * i, (width - 78) / 2, "\U0001F948   %2d|%-20s|%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished);
             refresh();
-            attroff(COLOR_PAIR(2) | A_BOLD);
+            attroff(COLOR_PAIR(7) | A_BOLD);
+            mvprintw(10 + 2 * i, width / 2 + 23, "(The LEGEND)");
         }
         else if (i == 2) {
-            attron(COLOR_PAIR(3) | A_BOLD);
-            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            attron(COLOR_PAIR(8) | A_BOLD);
+            mvprintw(10 + 2 * i, (width - 78) / 2, "\U0001F949   %2d|%-20s|%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished);
             refresh();
-            attroff(COLOR_PAIR(3) | A_BOLD);
+            attroff(COLOR_PAIR(8) | A_BOLD);
+            mvprintw(10 + 2 * i, width / 2 + 23, "(The MASTER)");
         }
         else {
-            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished, players[i].exp);
+            mvprintw(10 + 2 * i, (width - 68) / 2, "%2d|%-20s|%9d |%9d |%9d ", i + 1, players[i].username, players[i].score, players[i].gold, players[i].finished);
             refresh();
         }
     }

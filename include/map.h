@@ -57,6 +57,7 @@ typedef struct {
     int y;
     int hp;
     int damage;
+    int range;
     bool alive;
 } Monster;
 

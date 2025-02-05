@@ -177,6 +177,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     bool entered_battle_room = false;
     int kills = 0;
     Monster** battle_monsters = (Monster**) calloc(20, sizeof(Monster*));
+    Monster** normal_monsters = (Monster**) calloc(20, sizeof(Monster*));
     int main_x;
     int main_y;
     int last_trap_x;
@@ -189,7 +190,8 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     long last_ench_effect_update;
     long last_spell_effect_update = 0;
     long last_food_effect_update = 0;
-    long last_monster_update;
+    long last_monster_place_update;
+    long last_monster_hit_update;
     const long hunger_interval = 60 * 1000000L;
     const long hunger_to_damage_interval = 60 * 1000000L;
     const long recover_health_interval = 5 * 1000000L;
@@ -197,6 +199,7 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
     const long spell_effect_interval = 10 * 1000000L;
     const long food_effect_interval = 10 * 1000000L;
     const long monster_movement_interval = 1 * 1000000L;
+    const long monster_damage_interval = 2 * 1000000L;
     Room* current_room = rooms[0];
     while (game_is_running) {
         command = getch();
@@ -222,6 +225,10 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
         }
         else {
             num_monsters = 12;
+        }
+
+        if (current_room != NULL) {
+            normal_monsters = current_room->monsters;
         }
 
         long current_time = get_current_time();
@@ -269,13 +276,18 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             magic_food_used = false;
         }
 
-        if (entered_battle_room && current_time - last_monster_update >= monster_movement_interval) {
+        if (entered_battle_room && current_time - last_monster_place_update >= monster_movement_interval) {
             monster_movments(battle_monsters, player, num_monsters);
-            last_monster_update = get_current_time();
+            last_monster_place_update = get_current_time();
         }
 
+        if (entered_battle_room && current_time - last_monster_hit_update >= monster_damage_interval) {
+            monsters_damage(battle_monsters, player, num_monsters);
+            last_monster_hit_update = get_current_time();
+        }
 
-        if (player->hp == 0) {
+        if (player->hp <= 0) {
+            player->finished++;
             death(width);
             game_is_running = false;
             command = 'q';
@@ -292,6 +304,33 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             attroff(COLOR_PAIR(9));
         }
         show_health_bar(player);
+
+        if (entered_battle_room && kills == num_monsters && num_monsters != 20) {
+            kills = 0;
+            entered_battle_room = false;
+            clear();
+            for (int i = 0; i < rooms[0]->total_rooms; i++) {
+                if (rooms[i]->visited) {
+                    display_single_room(rooms[i]);
+                }
+            }
+
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
+                    if (corridors[i][j] == '#' || corridors[i][j] == '+') {
+                        mvprintw(i, j, "%c", corridors[i][j]);
+                    }
+                }
+            }
+
+            player->x = main_x;
+            player->y = main_y;
+            current_x = main_x;
+            current_y = main_y;
+            move_player(player, main_y, main_x);
+            show_game_bar(player, backpack, *claimed_gold);
+            mvprintw(last_trap_y, last_trap_x, "\U0001F571");
+        }
 
         switch (command) {
         case 'q':
@@ -1027,6 +1066,293 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 show_hunger_bar(player);
             }
             break;
+        case 'm':
+            if (!entered_battle_room) {
+                corridors = save_corridors();
+                clear();
+                for (int i = 0; i < rooms[0]->total_rooms; i++) {
+                    display_single_room(rooms[i]);
+                }
+
+                for (int i = 0; i < height; i++) {
+                    for (int j = 0; j < width; j++) {
+                        if (final_corridors[i][j] == '#' || final_corridors[i][j] == '+') {
+                            mvprintw(i, j, "%c", final_corridors[i][j]);
+                        }
+                    }
+                }
+                refresh();
+                sleep(3);
+                clear();
+                for (int i = 0; i < rooms[0]->total_rooms; i++) {
+                    if (rooms[i]->visited) {
+                        display_single_room(rooms[i]);
+                    }
+                }
+
+                for (int i = 0; i < height; i++) {
+                    for (int j = 0; j < width; j++) {
+                        if (corridors[i][j] == '#' || corridors[i][j] == '+') {
+                            mvprintw(i, j, "%c", corridors[i][j]);
+                        }
+                    }
+                }
+
+                show_game_bar(player, backpack, *claimed_gold);
+                move_player(player, current_y, current_x);
+                refresh();
+            }
+            break;
+        case 32:
+            if (entered_battle_room) {
+                if (backpack->default_weapon->type == 'M' || backpack->default_weapon->type == 'S') {
+                    mvprintw(2, width / 2 - 12, "Enter direction");
+                    char direction = getch();
+                    while (1) {
+                        if (direction == '4') {
+                            Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        else if (direction == '8') {
+                            Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        else if (direction == '6') {
+                            Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        else if (direction == '2') {
+                            Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        direction = getch();
+                    }
+                }
+                else {
+                    if (backpack->default_weapon->ammo > 0) {
+                        backpack->default_weapon->ammo--;
+                        mvprintw(2, width / 2 - 12, "Enter direction");
+                        char direction = getch();
+                        while (1) {
+                            if (direction == '4') {
+                                Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            else if (direction == '8') {
+                                Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            else if (direction == '6') {
+                                Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            else if (direction == '2') {
+                                Monster* found = find_monster(battle_monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            direction = getch();
+                        }
+                    }
+                }
+                show_battle_bar(backpack, kills);
+            }
+            else {
+                if (backpack->default_weapon->type == 'M' || backpack->default_weapon->type == 'S') {
+                    mvprintw(2, width / 2 - 12, "Enter direction");
+                    char direction = getch();
+                    while (1) {
+                        if (direction == '4') {
+                            Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        else if (direction == '8') {
+                            Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        else if (direction == '6') {
+                            Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        else if (direction == '2') {
+                            Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                            if (found != NULL) {
+                                found->hp -= backpack->default_weapon->damage;
+                                if (found->hp <= 0) {
+                                    found->alive = false;
+                                    mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                    kills++;
+                                    mvaddch(found->y, found->x, ".");
+                                }
+                            }
+                            break;
+                        }
+                        direction = getch();
+                    }
+                }
+                else if (current_room != NULL) {
+                    if (backpack->default_weapon->ammo > 0) {
+                        backpack->default_weapon->ammo--;
+                        mvprintw(2, width / 2 - 12, "Enter direction");
+                        char direction = getch();
+                        while (1) {
+                            if (direction == '4') {
+                                Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            else if (direction == '8') {
+                                Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            else if (direction == '6') {
+                                Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            else if (direction == '2') {
+                                Monster* found = find_monster(current_room->monsters, player, direction, num_monsters);
+                                if (found != NULL) {
+                                    found->hp -= backpack->default_weapon->damage;
+                                    if (found->hp <= 0) {
+                                        found->alive = false;
+                                        mvprintw(2, width / 2 - 12, "Monster eliminated!");
+                                        kills++;
+                                        mvaddch(found->y, found->x, ".");
+                                    }
+                                }
+                                break;
+                            }
+                            direction = getch();
+                        }
+                    }
+                }
+                show_battle_bar(backpack, kills);
+            }
+            break;
         case 27:
             bool is_leaving = show_pause_menu(player, width);
             if (is_leaving) {
@@ -1608,7 +1934,10 @@ long get_current_time() {
 
 
 void death(int width) {
-    mvprintw(2, width / 2 - 4, "You died!");
+    attron(COLOR_PAIR(9));
+    mvprintw(2, width / 2 - 16, "You died! Press ANY KEY to quit.");
+    attroff(COLOR_PAIR(9));
+    getch();
 }
 
 
@@ -1845,35 +2174,35 @@ Monster** battle_room(Player* player, Backpack* backpack, int claimed_gold, int 
         int prob = rand() % 10 + 1;
         if (prob <= 1) {
             monsters[i]->type = 'D';
-            monsters[i]->damage = 3 * player->difficulty_coeff;
+            monsters[i]->damage = 2;
             monsters[i]->hp = 5;
             monsters[i]->alive = true;
             monsters[i]->range = 1;
         }
         else if (prob <= 3) {
             monsters[i]->type = 'F';
-            monsters[i]->damage = 5 * player->difficulty_coeff;
+            monsters[i]->damage = 4;
             monsters[i]->hp = 10;
             monsters[i]->alive = true;
             monsters[i]->range = 1;
         }
         else if (prob <= 6) {
             monsters[i]->type = 'G';
-            monsters[i]->damage = 7 * player->difficulty_coeff;
+            monsters[i]->damage = 6;
             monsters[i]->hp = 15;
             monsters[i]->alive = true;
             monsters[i]->range = 5;
         }
         else if (prob <= 8) {
             monsters[i]->type = 'S';
-            monsters[i]->damage = 10 * player->difficulty_coeff;
+            monsters[i]->damage = 8;
             monsters[i]->hp = 20;
             monsters[i]->alive = true;
             monsters[i]->range = 1000;
         }
         else {
             monsters[i]->type = 'U';
-            monsters[i]->damage = 15 * player->difficulty_coeff;
+            monsters[i]->damage = 10;
             monsters[i]->hp = 30;
             monsters[i]->alive = true;
             monsters[i]->range = 5;
@@ -1952,7 +2281,7 @@ void show_battle_bar(Backpack* backpack, int kills) {
 
 
 void monster_movments(Monster** monsters, Player* player, int num_monsters) {
-    static updates = 0;
+    static long updates = 0;
     for (int i = 0; i < num_monsters; i++) {
         if (monsters[i]->type == 'G') {
             if (distance(player->x, player->y, monsters[i]->x, monsters[i]->y) <= monsters[i]->range) {
@@ -2364,4 +2693,67 @@ void monster_movments(Monster** monsters, Player* player, int num_monsters) {
 
 int distance(int x1, int y1, int x2, int y2) {
     return abs(x2 - x1) + abs(y2 - y1);
+}
+
+
+void monsters_damage(Monster** monsters, Player* player, int num_monsters) {
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    for (int i = 0; i < num_monsters; i++) {
+        if (distance(player->x, player->y, monsters[i]->x, monsters[i]->y) <= 1) {
+            player->hp -= monsters[i]->damage * player->difficulty_coeff;
+            mvprintw(2, width / 2 - 15, "Run! Monsters are eating you!");
+        }
+    }
+}
+
+
+Monster* find_monster(Monster** monsters, Player* player, char direction, int num_monsters) {
+    if (monsters == NULL) {
+        return NULL;
+    }
+    bool found_monster = false;
+    Monster* found = (Monster*) malloc(sizeof(Monster));
+    int min_distance = 100000;
+    if (direction == '4') {
+        for (int i = 0; i < num_monsters; i++) {
+            if (monsters[i]->x < player->x && distance(player->x, player->y, monsters[i]->x, monsters[i]->y) < min_distance) {
+                min_distance = distance(player->x, player->y, monsters[i]->x, monsters[i]->y);
+                found = monsters[i];
+                found_monster = true;
+            } 
+        }
+    }
+    else if (direction == '8') {
+        for (int i = 0; i < num_monsters; i++) {
+            if (monsters[i]->y < player->y && distance(player->x, player->y, monsters[i]->x, monsters[i]->y) < min_distance) {
+                min_distance = distance(player->x, player->y, monsters[i]->x, monsters[i]->y);
+                found = monsters[i];
+                found_monster = true;
+            } 
+        }
+    }
+    else if (direction == '6') {
+        for (int i = 0; i < num_monsters; i++) {
+            if (monsters[i]->x > player->x && distance(player->x, player->y, monsters[i]->x, monsters[i]->y) < min_distance) {
+                min_distance = distance(player->x, player->y, monsters[i]->x, monsters[i]->y);
+                found = monsters[i];
+                found_monster = true;
+            } 
+        }
+    }
+    else if (direction == '2') {
+        for (int i = 0; i < num_monsters; i++) {
+            if (monsters[i]->y > player->y && distance(player->x, player->y, monsters[i]->x, monsters[i]->y) < min_distance) {
+                min_distance = distance(player->x, player->y, monsters[i]->x, monsters[i]->y);
+                found = monsters[i];
+                found_monster = true;
+            } 
+        }
+    }
+
+    if (found_monster)
+        return found;
+
+    return NULL;
 }

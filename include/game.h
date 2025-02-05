@@ -31,3 +31,7 @@ bool show_pause_menu(Player*, int);
 void show_options_menu(Player*, int);
 Monster** battle_room(Player*, Backpack*, int, int, int*, int*);
 void show_battle_bar(Backpack*, int);
+void monster_movments(Monster**, Player*, int);
+int distance(int, int, int, int);
+void monsters_damage(Monster**, Player*, int);
+Monster* find_monster(Monster**, Player*, char, int);

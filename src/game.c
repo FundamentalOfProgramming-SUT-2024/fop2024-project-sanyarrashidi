@@ -332,6 +332,43 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
             mvprintw(last_trap_y, last_trap_x, "\U0001F571");
         }
 
+        if (entered_battle_room && kills == num_monsters && num_monsters == 20) {
+            clear();
+            mvprintw(height / 2, (width - 18) / 2, "Congrats! You won!");
+            mvprintw(height / 2 + 2, (width - 13) / 2, "+1000 scores!");
+            player->score += 1000;
+            save_player(player);
+            getch();
+            sleep(5);
+            endwin();
+            exit(0);
+        }
+
+        
+        if (player->x == rooms[rooms[0]->total_rooms - 1]->corner_x + 1 && player->y == rooms[rooms[0]->total_rooms - 1]->corner_y + 1) {
+            clear();
+            entered_battle_room = true;
+            num_monsters = 20;
+            battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+            entered_battle_room = true;
+            int num_monsters;
+            if (current_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                num_monsters = 20;
+            }
+            else {
+                num_monsters = 12;
+            }
+            main_x = current_x;
+            main_y = current_y - 1;
+            last_trap_x = current_x;
+            last_trap_y = current_y;
+            corridors = save_corridors();
+            battle_monsters = battle_room(player, backpack, *claimed_gold, num_monsters, &current_y, &current_x);
+            current_y++;
+            show_battle_bar(backpack, kills);
+            show_game_bar(player, backpack, *claimed_gold);
+        }
+
         switch (command) {
         case 'q':
             if (entered_battle_room) {
@@ -1382,6 +1419,9 @@ int load_level(Player* player, Backpack* backpack, Room** rooms, char** final_co
                 }
                 else {
                     mvprintw(2, width / 2 - 15, "You have discovered a new room!");
+                    if (visited_room->corner_x == rooms[rooms[0]->total_rooms - 1]->corner_x) {
+                        mvprintw(rooms[rooms[0]->total_rooms - 1]->corner_y + 1, rooms[rooms[0]->total_rooms - 1]->corner_x + 1, "\U0001F3C6");
+                    }
                 }
                 move_player(player, current_y, current_x);
             }

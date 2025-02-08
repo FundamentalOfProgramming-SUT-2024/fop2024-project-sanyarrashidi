@@ -239,6 +239,8 @@ char** read_corridors(Player* player, int height, int width, int level, bool fin
         }
     }
 
+    endwin();
+    exit(0);
     fclose(data_file);
     chdir("..");
     chdir("..");
